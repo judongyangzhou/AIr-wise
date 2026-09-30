@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools", "wheel"]
+requires = ["setuptools==83.0.0", "wheel==0.47.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -7,19 +7,19 @@ name = "airwise"
 version = "0.1.0"
 description = "AI-based uncertainty-aware air quality assessment."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.11"
 dependencies = [
-    "cdsapi",
-    "matplotlib",
-    "numpy",
-    "pandas",
-    "PyYAML",
-    "reportlab",
-    "netcdf4",
-    "shapely>=2.0",
-    "pyproj>=3.6",
-    "scipy",
-    "xarray",
+    "cdsapi==0.7.7",
+    "matplotlib==3.10.9",
+    "numpy==2.2.6",
+    "pandas==2.3.3",
+    "PyYAML==6.0.3",
+    "reportlab==5.0.1",
+    "netcdf4==1.7.4",
+    "shapely==2.1.2",
+    "pyproj==3.7.1",
+    "scipy==1.15.3",
+    "xarray==2025.6.1",
 ]
 
 [project.scripts]
@@ -45,35 +45,35 @@ airwise-train-model = "airwise.cli.training_data:train_main"
 # PyTorch's CPU/GPU wheel source is selected at install time; see
 # docs/installation.md for a CPU-only installation.
 report = [
-    "torch",
-    "cfgrib",
-    "ecmwf-opendata",
+    "torch==2.14.1",
+    "cfgrib==0.9.15.1",
+    "ecmwf-opendata==0.3.34",
 ]
 # Model retraining only. Install together with `report` when both workflows
 # are needed; CUDA is optional and is not declared as a project dependency.
 train = [
-    "torch",
-    "tensorboard",
-    "dask",
-    "zarr",
+    "torch==2.14.1",
+    "tensorboard==2.21.0",
+    "dask==2026.8.0",
+    "zarr==2.18.3",
 ]
 inference = [
-    "torch",
+    "torch==2.14.1",
 ]
 regrid = [
-    "dask",
+    "dask==2026.8.0",
 ]
 open-ifs = [
-    "cfgrib",
-    "ecmwf-opendata",
+    "cfgrib==0.9.15.1",
+    "ecmwf-opendata==0.3.34",
 ]
 zarr = [
-    "dask",
-    "zarr",
+    "dask==2026.8.0",
+    "zarr==2.18.3",
 ]
 test = [
-    "pytest",
-    "jsonschema",
+    "pytest==9.1.1",
+    "jsonschema==4.26.0",
 ]
 
 [tool.setuptools.packages.find]

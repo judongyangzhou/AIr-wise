@@ -6,7 +6,7 @@ import argparse
 from collections.abc import Callable, Sequence
 from pathlib import Path
 
-from airwise.cli._common import parse_date
+from airwise.cli._common import SUPPORTED_COUNTRY, parse_date, parse_supported_country
 from airwise.cli.acquire import main as acquire_main
 from airwise.cli.aqi import main as aqi_main
 from airwise.cli.confidence import main as confidence_main
@@ -25,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Download one day's inputs, compute AQI and neural confidence, "
-            "and write the JSON and PDF bulletin."
+            "and write the JSON and PDF bulletin. Only Germany is currently supported."
         )
     )
     parser.add_argument("--date", "-d", required=True, type=parse_date)
@@ -45,7 +45,12 @@ def build_parser() -> argparse.ArgumentParser:
         default=str(default_region_config()),
         help="Region YAML. Default: configs/regions/germany.yaml.",
     )
-    parser.add_argument("--country", default="Germany")
+    parser.add_argument(
+        "--country",
+        default=SUPPORTED_COUNTRY,
+        type=parse_supported_country,
+        help="Policy download country. Only Germany is currently supported.",
+    )
     parser.add_argument(
         "--overwrite",
         action="store_true",

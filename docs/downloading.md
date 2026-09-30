@@ -1,108 +1,178 @@
 # Downloading data
 
-`airwise-daily` downloads the three inputs and then continues through AQI,
-confidence, and the PDF. To download only, use one command for all three
-products or one command for each product. Existing files are skipped unless
-`--overwrite` is set. Report rendering does not download data.
+This page describes the remote data sources used by daily reporting and model
+training. Output directories come from the project configuration; see
+[Configuration](configuration.md) before downloading large archives.
 
-Download CAMS, the OpenIFS 00z control forecast, and CAMS Policy city
-forecasts for one date:
+## CAMS credentials
 
-```bash
-airwise-acquire-daily-inputs --date 20260929
-```
+AIr-wise uses `cdsapi` for:
 
-Download one product at a time:
+- CAMS Europe daily air-quality forecasts;
+- historical CAMS Europe analysis and forecasts.
 
-```bash
-airwise-download-cams-forecast --date 20260929
-airwise-download-open-ifs --date 20260929
-airwise-download-policy-forecast --date 20260929
-```
-
-`--date` accepts `YYYYMMDD` or `YYYY-MM-DD`. `airwise-download-open-ifs` also
-accepts `--channel` for that one run. See the sections below for credentials,
-OpenIFS channels, and the Policy city list.
-
-## CAMS forecast
-
-The daily forecast is the Copernicus Atmosphere Data Store dataset
-[`cams-europe-air-quality-forecasts`](https://ads.atmosphere.copernicus.eu/datasets/cams-europe-air-quality-forecasts):
-the 00:00 UTC ensemble, surface level, lead hours 0–23, for nitrogen dioxide,
-ozone, PM2.5, PM10, and sulphur dioxide. The file is written to
-`paths.cams_forecast_daily`.
-
-Downloads use the [cdsapi](https://github.com/ecmwf/cdsapi) client. It is
-installed with the project (`pip install -e ".[report]"`). Credentials are
-separate and come from the Atmosphere Data Store:
+These downloads use the Copernicus Atmosphere Data Store dataset
+[`cams-europe-air-quality-forecasts`](https://ads.atmosphere.copernicus.eu/datasets/cams-europe-air-quality-forecasts).
+Configure access as follows:
 
 1. Register and log in at the
    [Atmosphere Data Store](https://ads.atmosphere.copernicus.eu/).
 2. Open [How to use the ADS API](https://ads.atmosphere.copernicus.eu/how-to-api)
    and copy the personal access token shown there.
 3. Accept the dataset licence on the CAMS Europe forecast download form.
-   The API refuses the request until that licence has been accepted in the
-   browser.
-4. Save the token in `$HOME/.cdsapirc`:
+4. Save the ADS token in `$HOME/.cdsapirc`:
 
 ```text
 url: https://ads.atmosphere.copernicus.eu/api
 key: <PERSONAL-ACCESS-TOKEN>
 ```
 
-`cdsapi.Client()` reads `~/.cdsapirc`. The URL above must be the Atmosphere
-Data Store. A Climate Data Store token
-([CDS API setup](https://cds.climate.copernicus.eu/how-to-api)) is a different
-key and does not authorise this CAMS dataset.
+`cdsapi.Client()` reads `~/.cdsapirc`. Keep this credential file outside the
+repository. A Climate Data Store token for ERA5 is a different key and does not
+authorise the CAMS Atmosphere Data Store dataset.
+
+## Download all daily-report inputs
+
+The normal reporting workflow downloads all three daily sources in one step:
+
+```bash
+airwise-acquire-daily-inputs --date 2026-09-29 --country Germany
+```
+
+This downloads:
+
+1. the CAMS Europe air-quality forecast through `cdsapi`;
+2. the OpenIFS 00Z control forecast through the configured Open Data channel;
+   and
+3. CAMS Policy source-receptor forecasts for German cities.
+
+The command currently accepts Germany only. Existing files are reused; pass
+`--overwrite` to replace them.
+
+## CAMS Europe
+
+Download one daily forecast:
+
+```bash
+airwise-download-cams-forecast --date 2026-09-29
+```
+
+The daily product is the 00:00 UTC surface ensemble forecast at lead hours
+0–23 for nitrogen dioxide, ozone, PM2.5, PM10, and sulphur dioxide. The file is
+written under `paths.cams_forecast_daily`. If `--date` is omitted, the command
+uses the current UTC date.
+
+For model training, download monthly analysis and 00Z forecast files over an
+inclusive range:
+
+```bash
+airwise-download-cams-archive --start 2023-01 --end 2025-12
+```
+
+The archive command writes NetCDF files under
+`paths.cams_data_raw/analysis` and `paths.cams_data_raw/forecast`. Use
+`--out-dir` to override the configured root for one invocation.
+
+## ERA5
+
+ERA5 uses the
+[Climate Data Store API](https://cds.climate.copernicus.eu/how-to-api), not the
+Atmosphere Data Store token described above. Accept the ERA5 dataset terms and
+place the CDS URL and token in `~/.cdsapirc` before running an ERA5 download.
+Users who download both CAMS and ERA5 must switch that file to the credentials
+for the service currently being queried.
+
+Download one configured ERA5 field for a calendar year:
+
+```bash
+airwise-download-era5 --year 2024 --variable t2m
+```
+
+Download every field listed in `era5_euro.variables`:
+
+```bash
+airwise-download-era5 --year 2024 --all
+```
+
+Use `--months 1 2 3` to request only selected months. Raw files are written
+under `paths.era5_data_raw`. Regridding is a separate local operation:
+
+```bash
+airwise-regrid-era5 --years 2023 2024 2025
+```
+
+See the [training guide](training.md#4-download-and-regrid-era5) for the full
+preparation sequence.
 
 ## OpenIFS control forecast
 
-The daily report uses the IFS 00z deterministic control forecast (`oper/fc`,
-member 0), cropped to Europe. It is not the 51-member ensemble. The same GRIB
-fields can be fetched in three ways. `open_ifs.channel` and
-`open_ifs.client_source` in `configs/default.yaml` are the repository
-defaults. `configs/local.yaml` overrides them for one machine.
-`airwise-download-open-ifs --channel` overrides them for one command.
-
-| `channel` | What it uses | `client_source` |
-| --- | --- | --- |
-| `client` | the [ecmwf-opendata](https://confluence.ecmwf.int/spaces/OIFS/pages/19661477/OpenIFS+Home) Python client, installed with `.[report]` | `google`, `aws`, `azure`, or `ecmwf` |
-| `https` | `curl`, or `wget` if `curl` is absent, from <https://data.ecmwf.int/forecasts> | ignored |
-| `gsutil` | the public `ecmwf-open-data` bucket; `gsutil` must be on `PATH` | ignored |
-
-`client_source` selects the mirror only when `channel` is `client`.
-
-`channel: https` is the simplest choice. It uses `curl` or `wget` and does
-not need the `ecmwf-opendata` package. Downloads come from `data.ecmwf.int`,
-so they can be slower and can be rate limited. Put this in `configs/local.yaml`
-to use it for daily downloads, for example:
-
-```yaml
-open_ifs:
-  channel: https
-```
-
-`configs/default.yaml` still defaults to `channel: client` and
-`client_source: google`. That Google mirror avoids the `data.ecmwf.int`
-request limit, but it needs `ecmwf-opendata`. `aws` and `azure` are the other
-mirrors for `channel: client`. `configs/local.example.yaml` shows
-`client_source: ecmwf`, which talks to the ECMWF server and can return HTTP
-429. `channel: gsutil` fits a machine that already has `gsutil`; it reads the
-same public files.
-
-One download without editing the config:
+Production reporting uses one OpenIFS 00Z control forecast (`number=0`):
 
 ```bash
-airwise-download-open-ifs --date 20260929 --channel https
-airwise-download-open-ifs --date 20260929 --channel client --client-source aws
+airwise-download-open-ifs --date 2026-09-29
 ```
 
-## CAMS Policy forecasts
+The default configuration uses the `client` channel with the Google mirror
+through `ecmwf-opendata`. No API credential is required for this public Open
+Data client. The resulting NetCDF files are cropped to Europe and written under
+`paths.open_ifs_data`.
 
-City source-receptor forecasts come from the
-[CAMS Policy website](https://policy.atmosphere.copernicus.eu/). No API token
-is required. The daily commands always download them. For the requested
-country (Germany by default) the download reads the public city catalogue
-and each city's daily forecast JSON from that site, using the TNO inventory.
-Files are written under `paths.cams_policy_forecast`. The bulletin fails
-instead of omitting the transboundary table when these files are missing.
+Available channels are:
+
+- `client`: use `ecmwf-opendata`; select `google`, `aws`, `azure`, or `ecmwf`
+  with `--client-source`.
+- `https`: download with `curl`, or `wget` when `curl` is absent, from
+  `data.ecmwf.int`; this route can be slower or rate limited.
+- `gsutil`: download from the public `ecmwf-open-data` Google Cloud Storage
+  bucket; the `gsutil` executable must be on `PATH`.
+
+Set the normal default in `open_ifs.channel` and
+`open_ifs.client_source`, or override it for one command:
+
+```bash
+airwise-download-open-ifs \
+  --date 2026-09-29 \
+  --channel client \
+  --client-source ecmwf
+```
+
+Use `--dry-run` to inspect an OpenIFS request without downloading it.
+
+Existing OpenIFS NetCDF files are validated before reuse. Valid files are kept;
+an unreadable or incomplete file stops acquisition and prints the recovery
+command. To force a fresh download and atomically replace every lead for one
+date, run:
+
+```bash
+airwise-download-open-ifs --date 2026-09-29 --overwrite
+```
+
+## CAMS Policy city forecasts
+
+Download the public source-receptor forecast files for German cities:
+
+```bash
+airwise-download-policy-forecast \
+  --date 2026-09-29 \
+  --country Germany
+```
+
+The files are written under `paths.cams_policy_forecast`. The standalone
+downloader can query other country names or two-letter codes exposed by the
+Policy API, but the published AIr-wise bulletin currently has a Germany-only
+region configuration. No API token is required. The default request uses the
+TNO inventory, and bulletin generation fails rather than silently omitting the
+transboundary table when these files are unavailable.
+
+## Reusing and replacing downloads
+
+Download commands skip files that already exist. Pass `--overwrite` only when
+the remote product must be fetched again. Downloaded and generated datasets are
+ignored by Git; the repository tracks only the small static assets needed by
+the report.
+
+## Next steps
+
+- [Generate the daily bulletin](quickstart.md)
+- [Prepare the historical training dataset](training.md)
+- [Change download and output directories](configuration.md)

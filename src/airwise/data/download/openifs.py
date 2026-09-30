@@ -31,7 +31,11 @@ import numpy as np
 import xarray as xr
 
 from airwise.config import europe_bounds, load_config, require_config, resolve_repo_path
-from airwise.data.io.openifs import OPEN_IFS_LEAD_HOURS, open_ifs_control_path
+from airwise.data.io.openifs import (
+    OPEN_IFS_LEAD_HOURS,
+    open_ifs_control_path,
+    validate_open_ifs_control_file,
+)
 
 # ECMWF oper/fc product identifiers and the three ways to fetch the same files.
 # Paths, the download channel, the Europe crop, and CAMS variable names
@@ -305,6 +309,8 @@ def extract_grib_lead(
         merged.attrs["date"] = init_date.strftime("%Y%m%d")
         merged.attrs["init_time"] = "00z"
         merged.attrs["source"] = "ECMWF IFS control forecast (oper/fc)"
+        for variable in merged.variables.values():
+            variable.attrs.pop("dtype", None)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         merged.to_netcdf(output_path)
         return output_path
@@ -491,6 +497,7 @@ def download_open_ifs_day(
     dry_run: bool = False,
     grib_only: bool = False,
     keep_grib: bool = False,
+    overwrite: bool = False,
     south: float | None = None,
     north: float | None = None,
     west: float | None = None,
@@ -530,14 +537,14 @@ def download_open_ifs_day(
         pending = [
             lead
             for lead in OPEN_IFS_LEAD_HOURS
-            if not open_ifs_control_path(output_root, day, lead).is_file()
+            if overwrite or not open_ifs_control_path(output_root, day, lead).is_file()
         ]
         if pending:
             _require_cfgrib()
 
     if channel == "gsutil" and not dry_run and shutil.which("gsutil") is None and runner is None:
         needs_download = any(
-            not open_ifs_control_path(output_root, day, lead).is_file()
+            (overwrite or not open_ifs_control_path(output_root, day, lead).is_file())
             and not (staging_dir / grib_object_name(day, lead)).is_file()
             for lead in OPEN_IFS_LEAD_HOURS
         )
@@ -548,12 +555,22 @@ def download_open_ifs_day(
     print(f"===== Download OpenIFS control: {day.isoformat()} (00z via {channel}) =====")
     for lead_hour in OPEN_IFS_LEAD_HOURS:
         netcdf_path = open_ifs_control_path(output_root, day, lead_hour)
-        if not grib_only and netcdf_path.is_file():
-            print(f"  [skip] {netcdf_path.name} already exists")
+        if not grib_only and netcdf_path.is_file() and not overwrite:
+            try:
+                validate_open_ifs_control_file(netcdf_path, day, lead_hour)
+            except Exception as exc:
+                raise OpenIFSDownloadError(
+                    f"Existing OpenIFS input is not usable: {netcdf_path}\n"
+                    "Re-download this date with:\n"
+                    f"  airwise-download-open-ifs --date {day.isoformat()} --overwrite"
+                ) from exc
+            print(f"  [reuse] {netcdf_path.name} already exists and is valid")
             written.append(netcdf_path)
             continue
 
         grib_path = staging_dir / grib_object_name(day, lead_hour)
+        if overwrite and not dry_run:
+            _remove_grib_cache(grib_path, index_dir)
         if channel == "gsutil":
             grib_path = _download_grib(
                 grib_uri(day, lead_hour, bucket=bucket),
@@ -592,17 +609,27 @@ def download_open_ifs_day(
             continue
 
         print(f"  extracting {grib_path.name} -> {netcdf_path.name}")
-        extract(
-            grib_path,
-            netcdf_path,
-            lead_hour=int(lead_hour),
-            init_date=day,
-            south=south,
-            north=north,
-            west=west,
-            east=east,
-            index_dir=index_dir,
+        extraction_path = (
+            netcdf_path.with_name(f".{netcdf_path.name}.tmp") if overwrite else netcdf_path
         )
+        extraction_path.unlink(missing_ok=True)
+        try:
+            extract(
+                grib_path,
+                extraction_path,
+                lead_hour=int(lead_hour),
+                init_date=day,
+                south=south,
+                north=north,
+                west=west,
+                east=east,
+                index_dir=index_dir,
+            )
+            if overwrite:
+                extraction_path.replace(netcdf_path)
+        finally:
+            if overwrite:
+                extraction_path.unlink(missing_ok=True)
         written.append(netcdf_path)
         if not keep_grib:
             _remove_grib_cache(grib_path, index_dir)
@@ -675,6 +702,11 @@ def main(argv: Sequence[str] | None = None) -> None:
         action="store_true",
         help="Keep the staged GRIB2 files after NetCDF extraction.",
     )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        help="Re-download and atomically replace existing NetCDF files.",
+    )
     parser.add_argument("--south", type=float, default=None, help="Crop edge. Defaults to era5_euro.area.south.")
     parser.add_argument("--north", type=float, default=None, help="Crop edge. Defaults to era5_euro.area.north.")
     parser.add_argument("--west", type=float, default=None, help="Crop edge. Defaults to era5_euro.area.west.")
@@ -695,6 +727,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             dry_run=args.dry_run,
             grib_only=args.grib_only,
             keep_grib=args.keep_grib,
+            overwrite=args.overwrite,
             south=args.south,
             north=args.north,
             west=args.west,

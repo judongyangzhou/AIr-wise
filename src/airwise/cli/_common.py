@@ -2,8 +2,20 @@
 
 from __future__ import annotations
 
+import argparse
 import logging
 from datetime import date, datetime
+
+SUPPORTED_COUNTRY = "Germany"
+
+
+def parse_supported_country(value: str) -> str:
+    """Accept only the country the daily bulletin is configured for."""
+    if value != SUPPORTED_COUNTRY:
+        raise argparse.ArgumentTypeError(
+            f"{value!r} is not supported; only {SUPPORTED_COUNTRY} is currently supported"
+        )
+    return value
 
 
 def parse_date(value: str) -> date:

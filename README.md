@@ -6,81 +6,87 @@ This repository contains the development code for the ECMWF Code for Earth 2026 
 
 AIr-wise develops an AI-driven workflow to move beyond deterministic AQI estimation by combining forecast error modelling, AQI computation, confidence score estimation, and automated country-level air quality reporting.
 
-The workflow is structured into four main components:
+The workflow combines:
 
-1. Data preparation and harmonisation of CAMS forecast, analysis, meteorological, and geospatial data.
-2. Forecast error modelling using machine learning and deep learning approaches.
-3. AQI computation and confidence score estimation.
-4. Automated report generation for country-level and city-level air quality summaries.
+- CAMS, OpenIFS, ERA5, and geospatial data preparation;
+- machine-learning forecast error modelling;
+- AQI and confidence score estimation; and
+- automated regional and city-level air-quality reporting.
 
-## Repository structure
+Production reporting currently supports Germany and uses the OpenIFS control
+forecast (`number=0`).
+
+## Choose your workflow
+
+For either workflow, create and activate the Python 3.10 Conda environment
+from a repository checkout:
+
+```bash
+conda create -n airwise python=3.10
+conda activate airwise
+python -m pip install "pip==26.2.1"
+```
+
+### I want to generate an air-quality report
+
+Install the pinned CPU-only PyTorch wheel and the report dependencies using
+the validated Python 3.10 constraints:
+
+```bash
+python -m pip install "torch==2.14.1" \
+  --index-url https://download.pytorch.org/whl/cpu
+python -m pip install \
+  -c constraints/py310.txt \
+  -e ".[report]"
+```
+
+Before the first report, accept the CAMS Europe dataset licence and save the
+Atmosphere Data Store token in `$HOME/.cdsapirc`:
 
 ```text
-src/airwise/
-    cli/                # Argument parsing and exit codes
-    pipelines/          # Explicit acquisition, AQI, confidence, and report flows
-    domain/             # AQI, pollutant, region, and bulletin models
-    config/             # External YAML loading and typed settings
-    resources/          # Installed AQI, template, and JSON-schema definitions
-    data/
-        download/       # Network-facing provider adapters
-        io/             # Local NetCDF and Zarr products
-        preprocessing/  # Regridding and model-independent transforms
-    modelling/          # Features, models, inference, and training subsystem
-    uncertainty/        # Probability and AQI-confidence algorithms
-    reporting/          # JSON/PDF presentation
+url: https://ads.atmosphere.copernicus.eu/api
+key: <PERSONAL-ACCESS-TOKEN>
 ```
 
-See [docs/architecture.md](docs/architecture.md) for dependency rules and the
-daily production flow. Production OpenIFS inference uses the control forecast
-only (`number=0`).
+See [CAMS credentials](docs/downloading.md#cams-credentials) for account and
+licence setup. OpenIFS and CAMS Policy do not require additional credentials
+with the default download configuration.
 
-## Install
-
-Copy `configs/local.example.yaml` to `configs/local.yaml` and set the data directories for this machine. `configs/default.yaml` keeps portable relative paths. `configs/local.yaml` is not committed.
-
-Daily acquisition, pretrained-model inference, and reporting do not require
-model retraining or CUDA. For a CPU-only report environment, install the
-CPU-only PyTorch wheel before the report extra:
+Generate the daily German JSON and PDF bulletin:
 
 ```bash
-python -m pip install torch \
-  --index-url https://download.pytorch.org/whl/cpu
-pip install -e ".[report]"
+airwise-daily --date YYYY-MM-DD --device cpu
 ```
 
-Retraining is an independent optional profile containing PyTorch, TensorBoard,
-Dask, and Zarr:
+See the [quick start](docs/quickstart.md) for data-access prerequisites,
+configuration, outputs, and the individual pipeline steps.
+
+### I want to retrain the AI models
+
+Install the independent training profile:
 
 ```bash
-pip install -e ".[train]"
+python -m pip install \
+  -c constraints/py310.txt \
+  -e ".[train]"
 ```
 
-Install `.[report,train]` only when both workflows are needed. See the
-[installation profiles](docs/installation.md) for CPU-only reporting, optional
-GPU training, development dependencies, and the complete daily command
-sequence.
-
-## Daily commands
-
-Run the full daily report in one command:
+After downloading and aligning the historical CAMS and ERA5 data, build the
+training stores and train a model:
 
 ```bash
-airwise-daily --date 20240430 --device cpu
+airwise-build-training-zarr --years 2023 2024 2025
+airwise-train-model
 ```
 
-The same steps remain available separately:
+See the [training guide](docs/training.md) for the complete data preparation,
+regridding, training, checkpoint, and TensorBoard workflow.
 
-```bash
-airwise-acquire-daily-inputs --date 20240430
-airwise-compute-aqi --date 20240430
-airwise-compute-confidence --date 20240430 --device cpu
-airwise-report \
-  --date 20240430 \
-  --region-config configs/regions/germany.yaml \
-  --output reports/germany_20240430.json \
-  --device cpu
-```
+## Documentation
 
-CAMS, OpenIFS, and Policy downloads, including CDS API credentials and the
-OpenIFS download channels, are described in [Downloading data](docs/downloading.md).
+- [Installation profiles](docs/installation.md)
+- [Daily-report quick start](docs/quickstart.md)
+- [Model training guide](docs/training.md)
+- [Downloading data](docs/downloading.md)
+- [Configuration](docs/configuration.md)
+- [Architecture](docs/architecture.md)

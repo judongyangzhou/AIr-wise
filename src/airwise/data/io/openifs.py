@@ -51,6 +51,26 @@ def resolve_open_ifs_path(root: str | Path, init_date: date | str, lead_hour: in
     return open_ifs_control_path(root, init_date, lead_hour)
 
 
+def _open_open_ifs_dataset(path: Path) -> xr.Dataset:
+    """Open current files and older files with a conflicting ``dtype`` attribute."""
+    try:
+        return xr.open_dataset(path)
+    except ValueError as exc:
+        if "overwriting existing key dtype" not in str(exc):
+            raise
+
+    raw = xr.open_dataset(path, decode_cf=False)
+    try:
+        for variable in raw.variables.values():
+            variable.attrs.pop("dtype", None)
+        decoded = xr.decode_cf(raw, decode_timedelta=True)
+        decoded.set_close(raw.close)
+        return decoded
+    except Exception:
+        raw.close()
+        raise
+
+
 def _validate_open_ifs_file(
     ds: xr.Dataset,
     path: Path,
@@ -82,6 +102,23 @@ def _validate_open_ifs_file(
     return valid_time
 
 
+def validate_open_ifs_control_file(
+    path: str | Path,
+    init_date: date | str,
+    lead_hour: int,
+) -> None:
+    """Raise when an existing OpenIFS lead cannot be used for inference."""
+    resolved_path = Path(path)
+    day = _as_date(init_date)
+    with _open_open_ifs_dataset(resolved_path) as source:
+        _validate_open_ifs_file(
+            source,
+            resolved_path,
+            init_date=day,
+            lead_hour=int(lead_hour),
+        )
+
+
 def load_open_ifs_day(
     root: str | Path,
     init_date: date | str,
@@ -103,7 +140,7 @@ def load_open_ifs_day(
             if not path.is_file():
                 raise FileNotFoundError(f"Missing Open IFS lead file: {path}")
 
-            source = xr.open_dataset(path)
+            source = _open_open_ifs_dataset(path)
             sources.append(source)
             valid_time = _validate_open_ifs_file(
                 source,

@@ -1,4 +1,9 @@
-# Airwise architecture
+# AIr-wise architecture
+
+This page is for contributors working on the package internals. Operational
+setup belongs in the [daily-report quick start](quickstart.md), the
+[model training guide](training.md), and the
+[configuration reference](configuration.md).
 
 ## Dependency direction
 
@@ -36,6 +41,9 @@ src/airwise/
 deployment and its report regions. Pipelines load them at their boundary and
 pass typed settings or explicit values inward.
 
+The merge order, path resolution, and region-file responsibilities are
+documented in [Configuration](configuration.md).
+
 Immutable application definitions are installed with the package:
 
 - `resources/aqi/europe.yaml`
@@ -58,6 +66,9 @@ Immutable application definitions are installed with the package:
 
 Report generation does not download data. EMOS, conformal calibration, and
 51-member OpenIFS ensemble experiments are not part of this flow.
+
+See the [daily-report quick start](quickstart.md) for the combined command and
+the commands for running these stages separately.
 
 ## Region definitions and geometry
 
@@ -85,3 +96,6 @@ sections.
 `modelling/features.py` owns model-specific feature preparation.
 `pipelines/prepare_training_data.py` and `pipelines/train_model.py` orchestrate
 cache creation and training.
+
+See the [model training guide](training.md) for the historical-data,
+regridding, Zarr, and training command sequence.

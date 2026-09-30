@@ -49,6 +49,7 @@ def acquire_daily_inputs(
     openifs_paths = openifs_downloader(
         report_date,
         output_dir=resolved.paths.open_ifs_data,
+        overwrite=not skip_existing,
     )
     _section("policy forecasts", report_date)
     policy_paths = policy_downloader(
