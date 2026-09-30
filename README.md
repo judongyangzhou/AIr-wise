@@ -4,22 +4,23 @@ This repository contains the development code for the ECMWF Code for Earth 2026 
 
 ## Project overview
 
-AIr-wise develops an AI-driven workflow to move beyond deterministic AQI estimation by combining forecast error modelling, AQI computation, confidence score estimation, and automated country-level air quality reporting.
-
-The workflow combines:
+AIr-wise combines data preparation, forecast-error modelling, AQI and confidence estimation, and automated reporting:
 
 - CAMS, OpenIFS, ERA5, and geospatial data preparation;
-- machine-learning forecast error modelling;
-- AQI and confidence score estimation; and
+- machine-learning forecast-error modelling;
+- AQI and confidence estimation; and
 - automated regional and city-level air-quality reporting.
 
 Production reporting currently supports Germany and uses the OpenIFS control
-forecast (`number=0`).
+forecast (`oper/fc`).
 
-## Choose your workflow
+## Choose what you want to do
 
-For either workflow, create and activate the Python 3.10 Conda environment
-from a repository checkout:
+Generating a report uses the pretrained models included in this repository.
+Retraining replaces those models with ones you train yourself.
+
+For either task, create and activate the Python 3.10 Conda environment from a
+repository checkout:
 
 ```bash
 conda create -n airwise python=3.10
