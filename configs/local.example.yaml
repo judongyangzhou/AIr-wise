@@ -21,3 +21,10 @@ paths:
 reporting:
   confidence:
     output_dir: "/mnt/data-disk/airwise/bulletin_uq"
+
+# Optional OpenIFS download mirror. This overrides client_source in
+# configs/default.yaml. The repository default is google. Change this value
+# to google, aws, azure, or ecmwf. It applies when channel remains client.
+# See docs/downloading.md.
+open_ifs:
+  client_source: ecmwf

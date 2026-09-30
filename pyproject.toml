@@ -7,7 +7,7 @@ name = "airwise"
 version = "0.1.0"
 description = "AI-based uncertainty-aware air quality assessment."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "cdsapi",
     "matplotlib",

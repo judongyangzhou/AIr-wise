@@ -519,9 +519,6 @@ def generate_report_json(
         nuts_shapefile=shapefile,
         land_sea_mask_path=land_mask,
     )
-    try:
-        attach_transboundary_pollution(report_data, report_date, policy_dir=policy_dir)
-        logger.info("Attached transboundary pollution table data")
-    except (FileNotFoundError, ValueError) as exc:
-        logger.warning("Skipping transboundary pollution section: %s", exc)
+    attach_transboundary_pollution(report_data, report_date, policy_dir=policy_dir)
+    logger.info("Attached transboundary pollution table data")
     return write_report_json(output_path, report_data)

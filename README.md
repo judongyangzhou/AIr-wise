@@ -81,3 +81,6 @@ airwise-report \
   --output reports/germany_20240430.json \
   --device cpu
 ```
+
+CAMS, OpenIFS, and Policy downloads, including CDS API credentials and the
+OpenIFS download channels, are described in [Downloading data](docs/downloading.md).

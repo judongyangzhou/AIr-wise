@@ -26,6 +26,12 @@ paths:
   nuts_shapefile: "data/shapefile/NUTS_RG_10M_2024_3035.gpkg"
   land_sea_mask: "data/land_sea_mask/land_sea_mask.nc"
 
+# OpenIFS 00z control forecast. Daily downloads use these defaults.
+# Change the mirror in configs/local.yaml. See docs/downloading.md.
+open_ifs:
+  channel: client
+  client_source: google
+
 cams_europe:
   dataset: "cams-europe-air-quality-forecasts"
   data_format: "netcdf"

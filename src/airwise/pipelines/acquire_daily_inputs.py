@@ -30,12 +30,15 @@ def acquire_daily_inputs(
     settings: AppSettings | None = None,
     country: str = "Germany",
     skip_existing: bool = True,
-    include_policy: bool = True,
     cams_downloader: Callable = download_cams_forecast_day,
     openifs_downloader: Callable = download_open_ifs_day,
     policy_downloader: Callable = download_country_city_forecasts,
 ) -> DailyInputPaths:
-    """Download CAMS, OpenIFS control, and optional Policy inputs explicitly."""
+    """Download CAMS, OpenIFS control, and Policy city forecasts.
+
+    The OpenIFS channel comes from ``open_ifs.channel`` unless the downloader
+    is called with an explicit channel.
+    """
     resolved = settings or load_settings()
     _section("CAMS forecast", report_date)
     cams_path = cams_downloader(
@@ -47,15 +50,15 @@ def acquire_daily_inputs(
         report_date,
         output_dir=resolved.paths.open_ifs_data,
     )
-    policy_paths = []
-    if include_policy:
-        _section("policy forecasts", report_date)
-        policy_paths = policy_downloader(
-            report_date,
-            country=country,
-            out_dir=resolved.paths.cams_policy_forecast,
-            skip_existing=skip_existing,
-        )
+    _section("policy forecasts", report_date)
+    policy_paths = policy_downloader(
+        report_date,
+        country=country,
+        out_dir=resolved.paths.cams_policy_forecast,
+        skip_existing=skip_existing,
+    )
+    if not policy_paths:
+        raise RuntimeError(f"No Policy city forecasts were downloaded for {report_date.isoformat()}.")
     return DailyInputPaths(
         cams_forecast=Path(cams_path),
         openifs_control=tuple(Path(path) for path in openifs_paths),

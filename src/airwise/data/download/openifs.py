@@ -34,13 +34,15 @@ from airwise.config import europe_bounds, load_config, require_config, resolve_r
 from airwise.data.io.openifs import OPEN_IFS_LEAD_HOURS, open_ifs_control_path
 
 # ECMWF oper/fc product identifiers and the three ways to fetch the same files.
-# Paths, the Europe crop, and CAMS variable names live in configs/default.yaml.
+# Paths, the download channel, the Europe crop, and CAMS variable names
+# live in configs/default.yaml.
 DEFAULT_BUCKET = "ecmwf-open-data"
 DEFAULT_PORTAL = "https://data.ecmwf.int/forecasts"
 DEFAULT_CHANNEL = "client"
 DEFAULT_CLIENT_SOURCE = "google"
 CONTROL_PARAMS = ("10u", "10v", "2t", "2d", "sp", "ssrd", "tp")
 DOWNLOAD_CHANNELS = ("client", "https", "gsutil")
+CLIENT_SOURCES = ("google", "aws", "azure", "ecmwf")
 
 FILTER_GROUPS: list[dict] = [
     {"shortName": ["10u", "10v"], "typeOfLevel": "heightAboveGround", "level": 10},
@@ -109,6 +111,35 @@ def grib_uri(
 def default_open_ifs_dir() -> Path:
     """Return the configured Open IFS NetCDF root."""
     return resolve_repo_path(require_config(load_config(), "paths", "open_ifs_data"))
+
+
+def resolve_open_ifs_download(
+    config: dict | None = None,
+    *,
+    channel: str | None = None,
+    client_source: str | None = None,
+) -> tuple[str, str]:
+    """Return the download channel and client mirror.
+
+    Explicit arguments win. Omitted values come from ``open_ifs`` in
+    ``configs/default.yaml``, then ``configs/local.yaml``.
+    """
+    section = (config if config is not None else load_config()).get("open_ifs") or {}
+    if not isinstance(section, dict):
+        raise ValueError("open_ifs in the project config must be a mapping.")
+    resolved_channel = str(channel if channel is not None else section.get("channel", DEFAULT_CHANNEL))
+    resolved_source = str(
+        client_source if client_source is not None else section.get("client_source", DEFAULT_CLIENT_SOURCE)
+    )
+    if resolved_channel not in DOWNLOAD_CHANNELS:
+        raise ValueError(
+            f"open_ifs.channel must be one of {DOWNLOAD_CHANNELS}, got {resolved_channel!r}."
+        )
+    if resolved_source not in CLIENT_SOURCES:
+        raise ValueError(
+            f"open_ifs.client_source must be one of {CLIENT_SOURCES}, got {resolved_source!r}."
+        )
+    return resolved_channel, resolved_source
 
 
 def _crop_bounds(
@@ -407,7 +438,7 @@ def _download_with_client(
         except ImportError as exc:
             raise RuntimeError(
                 "ecmwf-opendata is not installed. Install it with "
-                "'pip install ecmwf-opendata', or use --channel https."
+                "'pip install ecmwf-opendata', or set open_ifs.channel to https."
             ) from exc
         client = Client(
             source=client_source,
@@ -450,9 +481,9 @@ def download_open_ifs_day(
     *,
     output_dir: str | Path | None = None,
     grib_dir: str | Path | None = None,
-    channel: str = DEFAULT_CHANNEL,
+    channel: str | None = None,
     bucket: str = DEFAULT_BUCKET,
-    client_source: str = DEFAULT_CLIENT_SOURCE,
+    client_source: str | None = None,
     portal_url: str = DEFAULT_PORTAL,
     http_tool: str | None = None,
     retries: int = 3,
@@ -475,8 +506,10 @@ def download_open_ifs_day(
     GRIB2 files are staged under ``grib_dir`` and removed after a successful
     extract unless ``keep_grib`` or ``grib_only`` is set.
     """
-    if channel not in DOWNLOAD_CHANNELS:
-        raise ValueError(f"channel must be one of {DOWNLOAD_CHANNELS}, got {channel!r}")
+    channel, client_source = resolve_open_ifs_download(
+        channel=channel,
+        client_source=client_source,
+    )
     day = parse_open_ifs_date(init_date)
     south, north, west, east = _crop_bounds(south, north, west, east)
     output_root = Path(output_dir) if output_dir is not None else default_open_ifs_dir()
@@ -597,8 +630,11 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument(
         "--channel",
         choices=DOWNLOAD_CHANNELS,
-        default=DEFAULT_CHANNEL,
-        help="Download channel: ecmwf-opendata client, HTTPS curl/wget, or gsutil.",
+        default=None,
+        help=(
+            "Download channel for this run: client, https, or gsutil. "
+            "Defaults to open_ifs.channel in configs/default.yaml."
+        ),
     )
     parser.add_argument(
         "--output-dir",
@@ -613,8 +649,12 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--bucket", default=DEFAULT_BUCKET, help="GCS bucket name for --channel gsutil.")
     parser.add_argument(
         "--client-source",
-        default=DEFAULT_CLIENT_SOURCE,
-        help="ecmwf-opendata source. google avoids the data.ecmwf.int 429 limit; also aws, azure, or ecmwf.",
+        choices=CLIENT_SOURCES,
+        default=None,
+        help=(
+            "ecmwf-opendata mirror when channel is client. "
+            "Defaults to open_ifs.client_source in configs/default.yaml."
+        ),
     )
     parser.add_argument(
         "--http-tool",

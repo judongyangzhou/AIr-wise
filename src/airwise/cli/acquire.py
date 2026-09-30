@@ -15,7 +15,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--date", "-d", required=True, type=parse_date)
     parser.add_argument("--country", default="Germany")
-    parser.add_argument("--no-policy", action="store_true")
     parser.add_argument("--overwrite", action="store_true")
     parser.add_argument(
         "--log-level",
@@ -31,14 +30,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     paths = acquire_daily_inputs(
         args.date,
         country=args.country,
-        include_policy=not args.no_policy,
         skip_existing=not args.overwrite,
     )
     locations = [paths.cams_forecast]
     if paths.openifs_control:
         locations.append(paths.openifs_control[0].parent)
-    if paths.policy_forecasts:
-        locations.append(paths.policy_forecasts[0].parent)
+    locations.append(paths.policy_forecasts[0].parent)
     print("===== Download finished. All data saved to: =====")
     for path in locations:
         print(path)

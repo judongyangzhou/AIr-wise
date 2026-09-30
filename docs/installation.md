@@ -13,7 +13,7 @@ null confidence values when the model or its inputs are unavailable.
 
 ## Common setup
 
-Python 3.9 or newer is required. From a repository checkout:
+Python 3.10 or newer is required. From a repository checkout:
 
 ```bash
 python -m venv .venv
@@ -25,8 +25,8 @@ cp configs/local.example.yaml configs/local.yaml
 `configs/local.example.yaml` shows placeholder paths on a separate data disk.
 Replace `/mnt/data-disk/airwise` with this machine's directories before use.
 Keys left out of that file, including the shapefile, land-sea mask, and model
-checkpoints, stay on the paths in `configs/default.yaml`. Configure CDS API
-credentials before downloading CAMS data.
+checkpoints, stay on the paths in `configs/default.yaml`. CAMS downloads need
+CDS API credentials; see [Downloading data](downloading.md).
 
 ## Daily reports on CPU (recommended for report users)
 
@@ -77,6 +77,9 @@ elsewhere. It reuses an existing confidence product. If one is absent,
 it can run the same pretrained-model inference itself. Running
 `airwise-compute-confidence` explicitly makes that step and any failure easier
 to inspect.
+
+CAMS, OpenIFS, and Policy downloads are described in
+[Downloading data](downloading.md).
 
 ## Retraining models
 
