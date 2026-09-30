@@ -1,0 +1,12 @@
+{
+  "kind": "pollutant",
+  "pollutant": "no2_conc",
+  "cams_forecast": {
+    "mean": 0.6589534878730774,
+    "std": 0.6484969258308411
+  },
+  "target_error": {
+    "mean": 0.08096034079790115,
+    "std": 0.1860893964767456
+  }
+}

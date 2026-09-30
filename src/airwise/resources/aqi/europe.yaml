@@ -1,0 +1,50 @@
+name: "European Air Quality Index"
+source: "CAMS Copernicus Training tutorial: European Air Quality Index Calculation"
+unit: "ug m-3"
+
+levels:
+  1:
+    label: "Good"
+    color: "#50F0E6"
+  2:
+    label: "Fair"
+    color: "#50CCAA"
+  3:
+    label: "Moderate"
+    color: "#EFE641"
+  4:
+    label: "Poor"
+    color: "#FE5051"
+  5:
+    label: "Very poor"
+    color: "#970033"
+  6:
+    label: "Extremely poor"
+    color: "#7C2180"
+
+
+thresholds:
+  no2_conc:
+    pollutant_name: "Nitrogen dioxide"
+    short_name: "NO2"
+    bins: [0, 10.5, 25.5, 60.5, 100.5, 150.5]
+
+  o3_conc:
+    pollutant_name: "Ozone"
+    short_name: "O3"
+    bins: [0, 60.5, 100.5, 120.5, 160.5, 180.5]
+
+  pm10_conc:
+    pollutant_name: "Particulate matter <= 10 µm"
+    short_name: "PM10"
+    bins: [0, 15.5, 45.5, 120.5, 195.5, 270.5]
+
+  pm2p5_conc:
+    pollutant_name: "Particulate matter <= 2.5 µm"
+    short_name: "PM2.5"
+    bins: [0, 5.5, 15.5, 50.5, 90.5, 140.5]
+
+  so2_conc:
+    pollutant_name: "Sulphur dioxide"
+    short_name: "SO2"
+    bins: [0, 20.5, 40.5, 125.5, 190.5, 275.5]

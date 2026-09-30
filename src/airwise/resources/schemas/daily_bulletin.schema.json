@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://airwise.example/schemas/daily_bulletin_region_table.schema.json",
+  "title": "Daily Air Quality Bulletin Region Table",
+  "type": "object",
+  "required": ["schema_version", "report_type", "metadata", "pollutant_summary_by_region"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "report_type": {
+      "type": "string",
+      "const": "daily_air_quality_bulletin"
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["title", "country", "report_date"],
+      "additionalProperties": false,
+      "properties": {
+        "title": { "type": "string" },
+        "country": { "type": "string" },
+        "report_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "project_ref": { "type": "string" },
+        "project_title": { "type": "string" }
+      }
+    },
+    "pollutant_summary_by_region": {
+      "type": "object",
+      "required": [
+        "section_title",
+        "interpretation",
+        "pollutant_order",
+        "pollutants",
+        "regions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "section_title": { "type": "string" },
+        "interpretation": { "type": "string" },
+        "pollutant_order": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["no2", "o3", "pm25", "pm10"]
+          },
+          "minItems": 4,
+          "maxItems": 4
+        },
+        "pollutants": {
+          "type": "object",
+          "required": ["no2", "o3", "pm25", "pm10"],
+          "additionalProperties": false,
+          "properties": {
+            "no2": { "$ref": "#/$defs/pollutantMeta" },
+            "o3": { "$ref": "#/$defs/pollutantMeta" },
+            "pm25": { "$ref": "#/$defs/pollutantMeta" },
+            "pm10": { "$ref": "#/$defs/pollutantMeta" }
+          }
+        },
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/region" }
+        }
+      }
+    },
+    "region_leadtime_heatmap": {
+      "type": "object",
+      "required": ["section_title", "interpretation"],
+      "additionalProperties": false,
+      "properties": {
+        "section_title": { "type": "string" },
+        "interpretation": { "type": "string" }
+      }
+    },
+    "forecast_time_series": {
+      "type": "object",
+      "required": ["section_title", "times", "regions"],
+      "additionalProperties": false,
+      "properties": {
+        "section_title": { "type": "string" },
+        "times": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "regions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/regionTimeSeries" }
+        }
+      }
+    },
+    "transboundary_pollution": {
+      "$ref": "#/$defs/transboundaryPollution"
+    }
+  },
+  "$defs": {
+    "pollutantMeta": {
+      "type": "object",
+      "required": ["label", "unit", "variable"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "unit": { "type": "string" },
+        "variable": { "type": "string" }
+      }
+    },
+    "pollutantCell": {
+      "type": "object",
+      "required": ["max_concentration", "max_time", "aqi_level"],
+      "additionalProperties": false,
+      "properties": {
+        "max_concentration": { "type": "number" },
+        "max_time": {
+          "type": "string",
+          "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+        },
+        "aqi_level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "confidence_score": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "max_lat": { "type": "number" },
+        "max_lon": { "type": "number" }
+      }
+    },
+    "region": {
+      "type": "object",
+      "required": ["id", "name", "cells"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "representative_city": { "type": "string" },
+        "nuts_id": { "type": "string" },
+        "lat": { "type": "number" },
+        "lon": { "type": "number" },
+        "cells": {
+          "type": "object",
+          "required": ["no2", "o3", "pm25", "pm10"],
+          "additionalProperties": false,
+          "properties": {
+            "no2": { "$ref": "#/$defs/pollutantCell" },
+            "o3": { "$ref": "#/$defs/pollutantCell" },
+            "pm25": { "$ref": "#/$defs/pollutantCell" },
+            "pm10": { "$ref": "#/$defs/pollutantCell" }
+          }
+        }
+      }
+    },
+    "pollutantSeries": {
+      "type": "object",
+      "required": ["values"],
+      "additionalProperties": false,
+      "properties": {
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "lower": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "upper": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        },
+        "distribution": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "number" }
+        }
+      },
+      "dependentRequired": {
+        "lower": ["upper"],
+        "upper": ["lower"]
+      }
+    },
+    "regionTimeSeries": {
+      "type": "object",
+      "required": ["region_id", "series"],
+      "additionalProperties": false,
+      "properties": {
+        "region_id": { "type": "string" },
+        "series": {
+          "type": "object",
+          "required": ["no2", "o3", "pm25", "pm10"],
+          "additionalProperties": false,
+          "properties": {
+            "no2": { "$ref": "#/$defs/pollutantSeries" },
+            "o3": { "$ref": "#/$defs/pollutantSeries" },
+            "pm25": { "$ref": "#/$defs/pollutantSeries" },
+            "pm10": { "$ref": "#/$defs/pollutantSeries" }
+          }
+        }
+      }
+    },
+    "transboundaryContributor": {
+      "type": "object",
+      "required": ["code", "label", "share"],
+      "additionalProperties": false,
+      "properties": {
+        "code": { "type": "string" },
+        "label": { "type": "string" },
+        "share": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "transboundaryPollutant": {
+      "type": "object",
+      "required": ["label", "top_contributors"],
+      "additionalProperties": false,
+      "properties": {
+        "label": { "type": "string" },
+        "top_contributors": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/transboundaryContributor" }
+        }
+      }
+    },
+    "transboundaryCity": {
+      "type": "object",
+      "required": ["id", "name", "pollutants"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "pollutants": {
+          "type": "object",
+          "required": ["pm10", "pm25"],
+          "additionalProperties": false,
+          "properties": {
+            "pm10": { "$ref": "#/$defs/transboundaryPollutant" },
+            "pm25": { "$ref": "#/$defs/transboundaryPollutant" }
+          }
+        }
+      }
+    },
+    "transboundaryPollution": {
+      "type": "object",
+      "required": [
+        "section_title",
+        "interpretation",
+        "lead_hours",
+        "top_n",
+        "pollutant_order",
+        "cities"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "section_title": { "type": "string" },
+        "interpretation": { "type": "string" },
+        "lead_hours": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": { "type": "integer" }
+        },
+        "top_n": { "type": "integer", "minimum": 1 },
+        "pollutant_order": {
+          "type": "array",
+          "const": ["pm10", "pm25"]
+        },
+        "cities": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/transboundaryCity" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,116 @@
+country: "GERMANY"
+country_code: "DE"
+nuts_level: 1
+
+regions:
+  - id: baden_wuerttemberg
+    name: "Baden-Württemberg"
+    nuts_id: DE1
+    representative_city: "Stuttgart"
+    lat: 48.7758
+    lon: 9.1829
+
+  - id: bavaria
+    name: "Bavaria"
+    nuts_id: DE2
+    representative_city: "Munich"
+    lat: 48.1351
+    lon: 11.5820
+
+  - id: berlin
+    name: "Berlin"
+    nuts_id: DE3
+    representative_city: "Berlin"
+    lat: 52.5200
+    lon: 13.4050
+
+  - id: brandenburg
+    name: "Brandenburg"
+    nuts_id: DE4
+    representative_city: "Potsdam"
+    lat: 52.3906
+    lon: 13.0645
+
+  - id: bremen
+    name: "Bremen"
+    nuts_id: DE5
+    representative_city: "Bremen"
+    lat: 53.0793
+    lon: 8.8017
+
+  - id: hamburg
+    name: "Hamburg"
+    nuts_id: DE6
+    representative_city: "Hamburg"
+    lat: 53.5511
+    lon: 9.9937
+
+  - id: hess
+    name: "Hesse"
+    nuts_id: DE7
+    representative_city: "Frankfurt"
+    lat: 50.1109
+    lon: 8.6821
+
+  - id: lower_saxony
+    name: "Lower Saxony"
+    nuts_id: DE9
+    representative_city: "Hannover"
+    lat: 52.3759
+    lon: 9.7320
+
+  - id: mecklenburg_western_pomerania
+    name: "Mecklenburg-Western Pomerania"
+    nuts_id: DE8
+    representative_city: "Schwerin"
+    lat: 53.6355
+    lon: 11.4012
+
+  - id: north_rhine_westphalia
+    name: "North Rhine-Westphalia"
+    nuts_id: DEA
+    representative_city: "Düsseldorf"
+    lat: 51.2277
+    lon: 6.7735
+
+  - id: rhineland_palatinate
+    name: "Rhineland-Palatinate"
+    nuts_id: DEB
+    representative_city: "Mainz"
+    lat: 49.9929
+    lon: 8.2473
+
+  - id: saarland
+    name: "Saarland"
+    nuts_id: DEC
+    representative_city: "Saarbrücken"
+    lat: 49.2402
+    lon: 6.9969
+
+  - id: saxony
+    name: "Saxony"
+    nuts_id: DED
+    representative_city: "Dresden"
+    lat: 51.0504
+    lon: 13.7373
+
+  - id: saxony_anhalt
+    name: "Saxony-Anhalt"
+    nuts_id: DEE
+    representative_city: "Magdeburg"
+    lat: 52.1205
+    lon: 11.6276
+
+  - id: schleswig_holstein
+    name: "Schleswig-Holstein"
+    nuts_id: DEF
+    representative_city: "Kiel"
+    lat: 54.3233
+    lon: 10.1228
+
+  - id: thuringia
+    name: "Thuringia"
+    nuts_id: DEG
+    representative_city: "Erfurt"
+    lat: 50.9848
+    lon: 11.0299

@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "airwise"
+version = "0.1.0"
+description = "AI-based uncertainty-aware air quality assessment."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "cdsapi",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "PyYAML",
+    "reportlab",
+    "netcdf4",
+    "shapely>=2.0",
+    "pyproj>=3.6",
+    "scipy",
+    "xarray",
+]
+
+[project.scripts]
+airwise-daily = "airwise.cli.daily:main"
+airwise-acquire-daily-inputs = "airwise.cli.acquire:main"
+airwise-compute-aqi = "airwise.cli.aqi:main"
+airwise-compute-confidence = "airwise.cli.confidence:main"
+airwise-report = "airwise.cli.report:main"
+airwise-report-json = "airwise.cli.report:main"
+airwise-report-pdf = "airwise.cli.report:pdf_main"
+airwise-report-tbi = "airwise.cli.report:transboundary_main"
+airwise-download-open-ifs = "airwise.cli.download:openifs_main"
+airwise-download-cams-forecast = "airwise.cli.download:cams_forecast_main"
+airwise-download-cams-archive = "airwise.cli.download:cams_archive_main"
+airwise-download-policy-forecast = "airwise.cli.download:policy_main"
+airwise-download-era5 = "airwise.cli.download:era5_main"
+airwise-regrid-era5 = "airwise.cli.training_data:regrid_main"
+airwise-build-training-zarr = "airwise.cli.training_data:prepare_main"
+airwise-train-model = "airwise.cli.training_data:train_main"
+
+[project.optional-dependencies]
+# Daily acquisition, pretrained-model inference, and JSON/PDF reporting.
+# PyTorch's CPU/GPU wheel source is selected at install time; see
+# docs/installation.md for a CPU-only installation.
+report = [
+    "torch",
+    "cfgrib",
+    "ecmwf-opendata",
+]
+# Model retraining only. Install together with `report` when both workflows
+# are needed; CUDA is optional and is not declared as a project dependency.
+train = [
+    "torch",
+    "tensorboard",
+    "dask",
+    "zarr",
+]
+inference = [
+    "torch",
+]
+regrid = [
+    "dask",
+]
+open-ifs = [
+    "cfgrib",
+    "ecmwf-opendata",
+]
+zarr = [
+    "dask",
+    "zarr",
+]
+test = [
+    "pytest",
+    "jsonschema",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+airwise = ["resources/**/*.yaml", "resources/**/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

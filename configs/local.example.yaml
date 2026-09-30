@@ -1,0 +1,23 @@
+# Optional overrides for this machine.
+# Copy to configs/local.yaml and replace the placeholder disk below.
+# configs/local.yaml is gitignored.
+# Dictionaries merge into configs/default.yaml; lists replace the whole list.
+# Keys omitted here keep the repository paths in configs/default.yaml,
+# including the bundled shapefile, land-sea mask, and model checkpoints.
+
+paths:
+  cams_data_raw: "/mnt/data-disk/airwise/cams/raw"
+  cams_data_processed: "/mnt/data-disk/airwise/cams/processed"
+  cams_forecast_daily: "/mnt/data-disk/airwise/cams_forecast"
+  cams_aqi_daily: "/mnt/data-disk/airwise/aqi"
+  cams_policy_forecast: "/mnt/data-disk/airwise/policy_forecast"
+  open_ifs_data: "/mnt/data-disk/airwise/open_ifs"
+  bulletin_uq: "/mnt/data-disk/airwise/bulletin_uq"
+  era5_data_raw: "/mnt/data-disk/airwise/era5/euro"
+  era5_data_cams_grid: "/mnt/data-disk/airwise/era5/euro_cams_grid"
+  training_zarr: "/mnt/data-disk/airwise/training_zarr"
+  tensorboard: "/mnt/data-disk/airwise/tensorboard"
+
+reporting:
+  confidence:
+    output_dir: "/mnt/data-disk/airwise/bulletin_uq"

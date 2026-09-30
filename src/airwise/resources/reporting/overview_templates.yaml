@@ -1,0 +1,33 @@
+section_title: "1 Overview"
+
+overall:
+  low: "Air quality across {country} is expected to be {overall_aqi_label} on {report_date}, with no significant pollution risk identified."
+  moderate: "Air quality across {country} is expected to reach {overall_aqi_label} on {report_date}, indicating moderate pollution risk."
+  elevated: "Air quality in parts of {country} is expected to reach {overall_aqi_label} on {report_date}, indicating elevated pollution risk."
+  high: "Air quality in parts of {country} is expected to reach {overall_aqi_label} on {report_date}, indicating significant pollution risk."
+
+main_concern:
+  single_pollutant_single_region: "The <b>main concern</b> is {pollutant} pollution in {region}."
+  single_pollutant_multiple_regions: "The <b>main concern</b> is {pollutant} pollution, mainly affecting {region_list}."
+  multiple_pollutants_single_region: "The <b>main concern</b> is mixed pollution in {region}, mainly driven by {pollutant_list}."
+  multiple_pollutants_multiple_regions: "The <b>main concern</b> is mixed pollution across {region_list}, mainly driven by {pollutant_list}."
+  none: "No dominant pollutant or regional hotspot is identified on {report_date}."
+
+pollutant_summary:
+  single: "The <b>main pollutant</b> of concern is {pollutant}, which contributes to the <b>highest AQI levels</b> in {count} out of {total} regions."
+  combined: "{pollutant_list} are the dominant pollutants, each appearing in {count} out of {total} regions."
+  none: "No single pollutant stands out as dominant across regions on {report_date}."
+
+peak:
+  standard: "The <b>daily peak</b> is expected in {region} for {pollutant} at {time}, reaching {value} {unit} and <b>AQI level</b> {aqi_label}."
+  severe: "The <b>most severe pollution episode</b> is expected in {region}, where {pollutant} peaks at {value} {unit} around {time}, corresponding to <b>AQI level</b> {aqi_label}."
+  none: "No strong single peak event is identified; pollution levels remain relatively stable throughout the day."
+
+forecast_peak:
+  none: ""
+  stable: "No clear peak episode is identified; AQI levels are expected to remain relatively stable throughout the day."
+  single_pollutant_single_region: "The highest forecast AQI level {aqi_label} occurs in {region} at {time}, when {pollutant} reaches {value} {unit}."
+  single_pollutant_multiple_regions: "{pollutant} drives the highest AQI level {aqi_label} across multiple regions, including {region_list}; the highest concentration is expected in {peak_region} at {time}, reaching {value} {unit}."
+  multiple_pollutants_single_region_intro: "{region} is the main peak hotspot today, with multiple pollutants {pollutant_list} reaching {aqi_label} air quality level."
+  multiple_pollutants_multiple_regions_intro: "There are {n} peaks that reach the highest forecast AQI level ({aqi_label})."
+  peak_detail: "{pollutant} reaches {value} {unit} at {time} in {region}."

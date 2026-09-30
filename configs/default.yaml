@@ -1,0 +1,174 @@
+project:
+  name: "AIr-wise"
+  full_name: "AIr-wise: AI-Based Uncertainty-Aware Air Quality Assessment"
+  challenge: "ECMWF Code for Earth 2026 Challenge 21"
+  version: "0.1.0"
+
+# Portable paths, relative to the repository root.
+# Machine-specific directories belong in configs/local.yaml (see local.example.yaml).
+paths:
+  cams_data_raw: "data/cams/raw"
+  cams_data_processed: "data/cams/processed"
+  cams_forecast_daily: "data/cams_forecast"
+  cams_aqi_daily: "data/aqi"
+  cams_policy_forecast: "data/policy_forecast"
+  open_ifs_data: "data/open_ifs"
+  bulletin_uq: "data/bulletin_uq"
+  era5_data_raw: "data/era5/euro"
+  era5_data_cams_grid: "data/era5/euro_cams_grid"
+  training_zarr: "data/training_zarr"
+  checkpoints: "models/checkpoints"
+  tensorboard: "logs/tensorboard"
+  data_processed: "data/processed"
+  figures: "figures"
+  reports: "reports"
+  configs: "configs"
+  nuts_shapefile: "data/shapefile/NUTS_RG_10M_2024_3035.gpkg"
+  land_sea_mask: "data/land_sea_mask/land_sea_mask.nc"
+
+cams_europe:
+  dataset: "cams-europe-air-quality-forecasts"
+  data_format: "netcdf"
+  model: "ensemble"
+  level: "0"
+
+  coordinate_names:
+    time: "time"
+    latitude: "latitude"
+    longitude: "longitude"
+    level: "level"
+
+  variables:
+    no2: "no2_conc"
+    o3: "o3_conc"
+    pm10: "pm10_conc"
+    pm25: "pm2p5_conc"
+    so2: "so2_conc"
+
+  # Copernicus ADS variable names used by the CAMS download entry points.
+  download_variables:
+    - "nitrogen_dioxide"
+    - "ozone"
+    - "particulate_matter_2.5um"
+    - "particulate_matter_10um"
+    - "sulphur_dioxide"
+
+  pollutant_variables:
+    - "no2_conc"
+    - "o3_conc"
+    - "pm10_conc"
+    - "pm2p5_conc"
+    - "so2_conc"
+
+era5_euro:
+  dataset: "reanalysis-era5-single-levels"
+  data_format: "netcdf"
+  download_format: "unarchived"
+  product_type: "reanalysis"
+
+  coordinate_names:
+    time: "valid_time"
+    latitude: "latitude"
+    longitude: "longitude"
+
+  variables:
+    u10: "10m_u_component_of_wind"
+    v10: "10m_v_component_of_wind"
+    t2m: "2m_temperature"
+    ssrd: "surface_solar_radiation_downwards"
+    tp: "total_precipitation"
+    blh: "boundary_layer_height"
+    d2m: "2m_dewpoint_temperature"
+    sp: "surface_pressure"
+
+  
+  area:
+    south: 30
+    north: 72
+    west: -25
+    east: 45
+
+  regrid:
+    reference_cams: "2024-11-01_2024-11-30.nc"
+    methods:
+      u10: bilinear
+      v10: bilinear
+      t2m: bilinear
+      d2m: bilinear
+      sp: bilinear
+      blh: bilinear
+      ssrd: bilinear
+      tp: nearest
+
+preprocessing:
+  normalise_longitude: true
+  squeeze_surface_level: true
+  daily_aggregation: "max"
+  daily_frequency: "1D"
+
+error_modelling:
+  # Default training recipe. CLI flags override these values.
+  pollutant: "pm10_conc"
+  train_val_years: [2023, 2024, 2025]
+  test_years: [2026]
+  lead_hours: [0, 3, 6, 9, 12, 15, 18, 21]
+  data_source: "auto"  # auto | zarr | netcdf
+  # Per-pollutant transform applied at train/load time.
+  # Zarr stores physical CAMS concentrations; null/false means no log.
+  pollutant_log_transform:
+    pm10_conc: "log1p"
+    pm2p5_conc: "log1p"
+    o3_conc: null
+    no2_conc: "log1p"
+    so2_conc: "log1p"
+  cams:
+    processed:
+      temporal_resolution: 1
+      log_transform: null
+      output_format: "netcdf"
+    training_input:
+      temporal_resolution: 3
+  era5:
+    # Spatial source for training meteorology:
+    #   cams = resampled onto CAMS Europe 0.1deg (paths.era5_data_cams_grid)
+    #   raw  = native ERA5 0.25deg (paths.era5_data_raw)
+    grid: "cams"
+    temporal_resolution: 3
+    variables:
+      - "u10"
+      - "v10"
+      - "t2m"
+      - "tp"
+      # - "blh"
+      - "sp"
+      - "ssrd"
+      - "rh"
+    log_transform:
+      tp: "log1p"
+      blh: "log1p"
+    # Binary / already-scaled inputs kept raw during z-score.
+    skip_zscore:
+      - "rain_mask"
+    # rain_mask is derived from tp and kept as raw 0/1 (no z-score).
+    # rh is derived from t2m+d2m and z-scored without log1p.
+
+reporting:
+  confidence:
+    output_dir: "data/bulletin_uq"
+    checkpoints:
+      no2: "models/checkpoints/no2/error_modelling_no2.pt"
+      o3: "models/checkpoints/o3/error_modelling_o3.pt"
+      pm25: "models/checkpoints/pm25/error_modelling_pm25.pt"
+      pm10: "models/checkpoints/pm10/error_modelling_pm10.pt"
+    stats:
+      no2: "models/stats/error_modelling_no2_conc_stats.json"
+      o3: "models/stats/error_modelling_o3_conc_stats.json"
+      pm25: "models/stats/error_modelling_pm2p5_conc_stats.json"
+      pm10: "models/stats/error_modelling_pm10_conc_stats.json"
+    era5_stats: "models/stats/error_modelling_era5_stats.json"
+
+aqi:
+  standard: "European_AQI"
+  # null uses the AQI definition bundled with the installed airwise package.
+  threshold_config: null
+  overall_method: "maximum_pollutant_level"

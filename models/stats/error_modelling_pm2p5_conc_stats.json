@@ -1,0 +1,12 @@
+{
+  "kind": "pollutant",
+  "pollutant": "pm2p5_conc",
+  "cams_forecast": {
+    "mean": 1.707768201828003,
+    "std": 0.63283771276474
+  },
+  "target_error": {
+    "mean": 0.024519886821508408,
+    "std": 0.18478518724441528
+  }
+}
