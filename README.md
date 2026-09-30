@@ -14,13 +14,20 @@ AIr-wise combines data preparation, forecast-error modelling, AQI and confidence
 Production reporting currently supports Germany and uses the OpenIFS control
 forecast (`oper/fc`).
 
-## Choose what you want to do
+## How to run it
 
-Generating a report uses the pretrained models included in this repository.
-Retraining replaces those models with ones you train yourself.
+### Prerequisites
 
-For either task, create and activate the Python 3.10 Conda environment from a
-repository checkout:
+- **Python 3.10.** The validated dependency set is pinned to this version.
+- **A free Copernicus Atmosphere Data Store account** for CAMS downloads.
+  Register at <https://ads.atmosphere.copernicus.eu/>, accept the CAMS Europe
+  dataset licence, and copy your personal access token from your profile page.
+- OpenIFS and CAMS Policy do not require additional credentials with the
+  default download configuration.
+
+### Step 1 — Create a clean environment
+
+From a repository checkout:
 
 ```bash
 conda create -n airwise python=3.10
@@ -28,7 +35,24 @@ conda activate airwise
 python -m pip install "pip==26.2.1"
 ```
 
-### I want to generate an air-quality report
+### Step 2 — Configure your CAMS credentials
+
+Save the Atmosphere Data Store token in `$HOME/.cdsapirc`:
+
+```text
+url: https://ads.atmosphere.copernicus.eu/api
+key: <PERSONAL-ACCESS-TOKEN>
+```
+
+See [CAMS credentials](docs/downloading.md#cams-credentials) for account and
+licence setup.
+
+### Step 3 — Choose what to run
+
+Generating a report uses the pretrained models included in this repository.
+Retraining replaces those models with ones you train yourself.
+
+#### I want to generate an air-quality report
 
 Install the pinned CPU-only PyTorch wheel and the report dependencies using
 the validated Python 3.10 constraints:
@@ -41,18 +65,6 @@ python -m pip install \
   -e ".[report]"
 ```
 
-Before the first report, accept the CAMS Europe dataset licence and save the
-Atmosphere Data Store token in `$HOME/.cdsapirc`:
-
-```text
-url: https://ads.atmosphere.copernicus.eu/api
-key: <PERSONAL-ACCESS-TOKEN>
-```
-
-See [CAMS credentials](docs/downloading.md#cams-credentials) for account and
-licence setup. OpenIFS and CAMS Policy do not require additional credentials
-with the default download configuration.
-
 Generate the daily German JSON and PDF bulletin:
 
 ```bash
@@ -62,7 +74,7 @@ airwise-daily --date YYYY-MM-DD --device cpu
 See the [quick start](docs/quickstart.md) for data-access prerequisites,
 configuration, outputs, and the individual pipeline steps.
 
-### I want to retrain the AI models
+#### I want to retrain the AI models
 
 Install the independent training profile:
 
@@ -81,7 +93,7 @@ airwise-train-model
 ```
 
 See the [training guide](docs/training.md) for the complete data preparation,
-regridding, training, checkpoint, and TensorBoard workflow.
+regridding, training, checkpoint, and TensorBoard monitoring.
 
 ## Documentation
 
