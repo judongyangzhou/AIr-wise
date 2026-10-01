@@ -61,10 +61,12 @@ Retraining replaces those models with ones you train yourself.
 
 #### I want to generate an air-quality report
 
-Install the report dependencies. PyTorch is not pinned; pip selects a build
-for this computer:
+Install PyTorch from the CPU package index first. Do not pin its version;
+that index then supplies a build for this computer. Install the report
+dependencies afterwards:
 
 ```bash
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 python -m pip install \
   -c constraints/py310.txt \
   -e ".[report]"

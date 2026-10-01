@@ -28,28 +28,19 @@ installation command below.
 
 ## Reporting
 
-Install the report dependencies. PyTorch is not pinned, so pip selects a build
-for the current platform:
+Install PyTorch from the CPU package index first, without a version pin. Then
+install the report dependencies. The second command reuses the installed
+PyTorch build:
 
 ```bash
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
 python -m pip install \
   -c constraints/py310.txt \
   -e ".[report]"
 ```
 
-The Python running this command must be able to install a current PyTorch
-wheel. An Intel Mac, or an Apple Silicon Mac using an `x86_64` Conda
-environment, only receives PyTorch 2.2.2. That release does not support the
-pinned NumPy 2.2.6, so the installation stops. Use a native `arm64` environment
-on Apple Silicon.
-
 Daily reporting does not need TensorBoard, Dask, Zarr, a CUDA toolkit, or a
-CUDA-enabled GPU. On Linux, the default PyPI build may still include CUDA
-libraries. To avoid that, install a CPU build before the command above:
-
-```bash
-python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-```
+CUDA-enabled GPU.
 
 ## Reporting credentials
 
@@ -77,8 +68,10 @@ python -m pip install \
   -e ".[train]"
 ```
 
-This installs PyTorch, TensorBoard, Dask, and Zarr. An already installed
-PyTorch build is reused. CPU-only training is supported but may be slow.
+This installs TensorBoard, Dask, and Zarr, and reuses the PyTorch build from
+the reporting step. CPU-only training is supported but may be slow. If this
+environment does not already contain PyTorch, run the CPU install command in
+[Reporting](#reporting) first.
 
 ## Combined and test environments
 
