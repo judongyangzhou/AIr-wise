@@ -104,3 +104,7 @@ regridding, training, checkpoint, and TensorBoard monitoring.
 - [Downloading data](docs/downloading.md)
 - [Configuration](docs/configuration.md)
 - [Architecture](docs/architecture.md)
+
+## License
+
+Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE).
