@@ -18,12 +18,11 @@ forecast (`oper/fc`).
 
 ### Prerequisites
 
-- **Python 3.10.**
+- **Python 3.10 or newer.** 
 - **A free Copernicus Atmosphere Data Store account** for CAMS downloads.
   Register at <https://ads.atmosphere.copernicus.eu/>, accept the CAMS Europe
   dataset licence, and copy your personal access token from your profile page.
-- OpenIFS and CAMS Policy do not require additional credentials with the
-  default download configuration.
+
 
 ### Step 1 — Create a clean environment
 
@@ -33,10 +32,9 @@ From a repository checkout:
 conda create -n airwise python=3.10
 conda activate airwise
 python -m pip install --upgrade pip
+conda activate airwise
 ```
 
-Activate this environment before the later commands. In a new terminal, run
-`conda activate airwise` again first.
 
 ### Step 2 — Configure your CAMS credentials
 
