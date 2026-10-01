@@ -18,7 +18,7 @@ forecast (`oper/fc`).
 
 ### Prerequisites
 
-- **Python 3.10.** The validated dependency set is pinned to this version.
+- **Python 3.10.**
 - **A free Copernicus Atmosphere Data Store account** for CAMS downloads.
   Register at <https://ads.atmosphere.copernicus.eu/>, accept the CAMS Europe
   dataset licence, and copy your personal access token from your profile page.
@@ -32,7 +32,7 @@ From a repository checkout:
 ```bash
 conda create -n airwise python=3.10
 conda activate airwise
-python -m pip install "pip==26.2.1"
+python -m pip install --upgrade pip
 ```
 
 Activate this environment before the later commands. In a new terminal, run
@@ -67,9 +67,7 @@ dependencies afterwards:
 
 ```bash
 python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[report]"
+python -m pip install -e ".[report]"
 ```
 
 Generate the daily German JSON and PDF bulletin:
@@ -86,9 +84,7 @@ configuration, outputs, and the individual pipeline steps.
 Install the independent training profile:
 
 ```bash
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[train]"
+python -m pip install -e ".[train]"
 ```
 
 After downloading and aligning the historical CAMS and ERA5 data, build the

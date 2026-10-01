@@ -12,19 +12,17 @@ AIr-wise has two independent dependency profiles:
 
 ## Common setup
 
-AIr-wise uses a validated Python 3.10 dependency set. From a repository
-checkout, create and activate the Conda environment:
+AIr-wise uses Python 3.10. From a repository checkout, create and activate the
+Conda environment:
 
 ```bash
 conda create -n airwise python=3.10
 conda activate airwise
-python -m pip install "pip==26.2.1"
+python -m pip install --upgrade pip
 ```
 
-Direct dependencies are pinned in `pyproject.toml`.
-`constraints/py310.txt` additionally pins their transitive dependencies to the
-versions tested together on Linux. Use that constraints file in every project
-installation command below.
+`xarray` is pinned to 2025.6.1 in `pyproject.toml`. Other dependencies declare
+a minimum version, so pip can select a build for the current platform.
 
 ## Reporting
 
@@ -34,9 +32,7 @@ PyTorch build:
 
 ```bash
 python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[report]"
+python -m pip install -e ".[report]"
 ```
 
 Daily reporting does not need TensorBoard, Dask, Zarr, a CUDA toolkit, or a
@@ -63,9 +59,7 @@ credentials with the default download configuration.
 Training dependencies are isolated in the `train` extra:
 
 ```bash
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[train]"
+python -m pip install -e ".[train]"
 ```
 
 This installs TensorBoard, Dask, and Zarr, and reuses the PyTorch build from
@@ -79,17 +73,13 @@ Install both profiles when one environment must generate reports and retrain
 models:
 
 ```bash
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[report,train]"
+python -m pip install -e ".[report,train]"
 ```
 
 Add the test dependencies for repository development:
 
 ```bash
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[report,train,test]"
+python -m pip install -e ".[report,train,test]"
 ```
 
 ## Next steps

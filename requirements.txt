@@ -1,2 +1,1 @@
--c constraints/py310.txt
 -e .[report,train,test]
