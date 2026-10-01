@@ -6,9 +6,9 @@ Germany only.
 
 ## Prerequisites
 
-1. Work from a repository checkout with the pinned Python 3.10 environment.
+1. Work from a repository checkout with Python 3.10 or newer.
 2. Install the `report` profile. The
-   [installation guide](installation.md#reporting-on-cpu) shows the recommended
+   [installation guide](installation.md#reporting) shows the recommended
    CPU-only setup.
 3. Configure Atmosphere Data Store access for the CAMS download as described in
    [Downloading data](downloading.md#cams-credentials).

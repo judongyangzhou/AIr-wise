@@ -49,7 +49,7 @@ This downloads:
 The command currently accepts Germany only. Existing files are reused; pass
 `--overwrite` to replace them.
 
-## CAMS Europe
+### CAMS Europe
 
 Download one daily forecast:
 
@@ -73,7 +73,7 @@ The archive command writes NetCDF files under
 `paths.cams_data_raw/analysis` and `paths.cams_data_raw/forecast`. Use
 `--out-dir` to override the configured root for one invocation.
 
-## ERA5
+### ERA5
 
 ERA5 uses the
 [Climate Data Store API](https://cds.climate.copernicus.eu/how-to-api), not the
@@ -104,7 +104,7 @@ airwise-regrid-era5 --years 2023 2024 2025
 See the [training guide](training.md#4-download-and-regrid-era5) for the full
 preparation sequence.
 
-## OpenIFS control forecast
+### OpenIFS control forecast
 
 Production reporting uses one OpenIFS 00Z control forecast (`number=0`):
 
