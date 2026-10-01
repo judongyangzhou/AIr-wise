@@ -35,17 +35,24 @@ conda activate airwise
 python -m pip install "pip==26.2.1"
 ```
 
+Activate this environment before the later commands. In a new terminal, run
+`conda activate airwise` again first.
+
 ### Step 2 — Configure your CAMS credentials
 
-Save the Atmosphere Data Store token in `$HOME/.cdsapirc`:
+1. Register and log in at the
+   [Atmosphere Data Store](https://ads.atmosphere.copernicus.eu/).
+2. Open [How to use the ADS API](https://ads.atmosphere.copernicus.eu/how-to-api)
+   and copy the personal access token shown there.
+3. Accept the dataset licence on the CAMS Europe forecast download form.
+4. Save the ADS token in `$HOME/.cdsapirc`:
 
 ```text
 url: https://ads.atmosphere.copernicus.eu/api
 key: <PERSONAL-ACCESS-TOKEN>
 ```
 
-See [CAMS credentials](docs/downloading.md#cams-credentials) for account and
-licence setup.
+See [CAMS credentials](docs/downloading.md#cams-credentials) for the same setup.
 
 ### Step 3 — Choose what to run
 
@@ -54,12 +61,10 @@ Retraining replaces those models with ones you train yourself.
 
 #### I want to generate an air-quality report
 
-Install the pinned CPU-only PyTorch wheel and the report dependencies using
-the validated Python 3.10 constraints:
+Install the report dependencies. PyTorch is not pinned; pip selects a build
+for this computer:
 
 ```bash
-python -m pip install "torch==2.14.1" \
-  --index-url https://download.pytorch.org/whl/cpu
 python -m pip install \
   -c constraints/py310.txt \
   -e ".[report]"

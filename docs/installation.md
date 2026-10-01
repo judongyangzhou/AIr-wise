@@ -26,23 +26,30 @@ Direct dependencies are pinned in `pyproject.toml`.
 versions tested together on Linux. Use that constraints file in every project
 installation command below.
 
-## Reporting on CPU
+## Reporting
 
-Install the official CPU-only PyTorch wheel first, then install the report
-dependencies:
+Install the report dependencies. PyTorch is not pinned, so pip selects a build
+for the current platform:
 
 ```bash
-python -m pip install "torch==2.14.1" \
-  --index-url https://download.pytorch.org/whl/cpu
 python -m pip install \
   -c constraints/py310.txt \
   -e ".[report]"
 ```
 
-Installing PyTorch first is intentional: the project pins PyTorch 2.14.1, but
-Python package metadata cannot select PyTorch's CPU-only package index. Once
-the CPU wheel is installed, the second command reuses it. Daily reporting does
-not need TensorBoard, Dask, Zarr, a CUDA toolkit, or a CUDA-enabled GPU.
+The Python running this command must be able to install a current PyTorch
+wheel. An Intel Mac, or an Apple Silicon Mac using an `x86_64` Conda
+environment, only receives PyTorch 2.2.2. That release does not support the
+pinned NumPy 2.2.6, so the installation stops. Use a native `arm64` environment
+on Apple Silicon.
+
+Daily reporting does not need TensorBoard, Dask, Zarr, a CUDA toolkit, or a
+CUDA-enabled GPU. On Linux, the default PyPI build may still include CUDA
+libraries. To avoid that, install a CPU build before the command above:
+
+```bash
+python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+```
 
 ## Reporting credentials
 
@@ -70,30 +77,8 @@ python -m pip install \
   -e ".[train]"
 ```
 
-This installs PyTorch, TensorBoard, Dask, and Zarr. CUDA remains optional.
-CPU-only training is supported but may be slow; to guarantee a CPU-only
-environment, install the CPU PyTorch wheel before the `train` extra:
-
-```bash
-python -m pip install "torch==2.14.1" \
-  --index-url https://download.pytorch.org/whl/cpu
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[train]"
-```
-
-For GPU training, first install the PyTorch build recommended for the
-machine's driver and platform, then install the project:
-
-```bash
-# First install the PyTorch 2.14.1 build appropriate for the platform.
-python -m pip install \
-  -c constraints/py310.txt \
-  -e ".[train]"
-```
-
-The repository does not pin a CUDA toolkit because the correct PyTorch/CUDA
-combination depends on the host GPU and driver.
+This installs PyTorch, TensorBoard, Dask, and Zarr. An already installed
+PyTorch build is reused. CPU-only training is supported but may be slow.
 
 ## Combined and test environments
 

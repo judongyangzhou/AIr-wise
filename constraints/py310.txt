@@ -1,8 +1,7 @@
 # Known-good Python 3.10 dependency set for reporting, training, and tests.
 # Validated on Linux on 2026-09-30.
 #
-# PyTorch is intentionally installed separately so users can select the CPU or
-# platform-appropriate GPU wheel. pyproject.toml pins its public version.
+# PyTorch is not listed here. pip selects a build for the current platform.
 
 absl-py==2.5.0
 asciitree==0.3.3
