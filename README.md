@@ -6,13 +6,14 @@ This repository contains the development code for the ECMWF Code for Earth 2026 
 
 AIr-wise combines data preparation, forecast-error modelling, AQI and confidence estimation, and automated reporting:
 
-- CAMS, OpenIFS, ERA5, and geospatial data preparation;
+- CAMS, operational IFS, ERA5, and geospatial data preparation;
 - machine-learning forecast-error modelling;
 - AQI and confidence estimation; and
 - automated regional and city-level air-quality reporting.
 
-Production reporting currently supports Germany and uses the OpenIFS control
-forecast (`oper/fc`).
+Production reporting currently supports Germany and uses the ECMWF operational
+high-resolution IFS forecast from the Open Data service (00 UTC, `stream=oper`,
+`type=fc`).
 
 ## How to run it
 

@@ -52,20 +52,20 @@ Immutable application definitions are installed with the package:
 
 ## Daily production flow
 
-1. `acquire_daily_inputs` explicitly downloads CAMS, OpenIFS control
-   (`number=0`), and CAMS Policy city forecasts. The bulletin table requires
-   the Policy files. Download sources are described in
+1. `acquire_daily_inputs` explicitly downloads CAMS, the operational IFS
+   forecast (`oper`/`fc`, 00 UTC), and CAMS Policy city forecasts. The bulletin
+   table requires the Policy files. Download sources are described in
    [Downloading data](downloading.md).
 2. `compute_daily_forecast_aqi` reads local CAMS data and writes an AQI
    NetCDF.
 3. `ensure_daily_uq_dataset` runs learned spatial-standard-deviation inference
-   from the OpenIFS control forecast and writes a versioned uncertainty
+   from the operational IFS forecast and writes a versioned uncertainty
    NetCDF.
 4. `generate_report_json` combines local products into the bulletin contract.
 5. Reporting code renders the JSON contract as PDF.
 
 Report generation does not download data. EMOS, conformal calibration, and
-51-member OpenIFS ensemble experiments are not part of this flow.
+51-member IFS ensemble experiments are not part of this flow.
 
 See the [daily-report quick start](quickstart.md) for the combined command and
 the commands for running these stages separately.

@@ -42,7 +42,8 @@ airwise-acquire-daily-inputs --date 2026-09-29 --country Germany
 This downloads:
 
 1. the CAMS Europe air-quality forecast through `cdsapi`;
-2. the OpenIFS 00Z control forecast through the configured Open Data channel;
+2. the 00 UTC operational high-resolution IFS forecast (`stream=oper`,
+   `type=fc`) through the configured Open Data channel;
    and
 3. CAMS Policy source-receptor forecasts for German cities.
 
@@ -104,9 +105,12 @@ airwise-regrid-era5 --years 2023 2024 2025
 See the [training guide](training.md#4-download-and-regrid-era5) for the full
 preparation sequence.
 
-### OpenIFS control forecast
+### Operational IFS forecast
 
-Production reporting uses one OpenIFS 00Z control forecast (`number=0`):
+Production reporting uses the ECMWF operational high-resolution IFS forecast
+from the Open Data service. Each request is the 00 UTC run at 0.25°
+(`model=ifs`, `stream=oper`, `type=fc`). This is not an OpenIFS experiment.
+Downloaded fields are stored locally with `number=0`:
 
 ```bash
 airwise-download-open-ifs --date 2026-09-29
@@ -136,9 +140,10 @@ airwise-download-open-ifs \
   --client-source ecmwf
 ```
 
-Use `--dry-run` to inspect an OpenIFS request without downloading it.
+Use `--dry-run` to inspect an operational IFS request without downloading it.
 
-Existing OpenIFS NetCDF files are validated before reuse. Valid files are kept;
+Existing operational IFS NetCDF files are validated before reuse. Valid files
+are kept;
 an unreadable or incomplete file stops acquisition and prints the recovery
 command. To force a fresh download and atomically replace every lead for one
 date, run:

@@ -76,7 +76,7 @@ Daily reporting primarily uses:
 - `cams_forecast_daily`: downloaded daily CAMS forecasts;
 - `cams_aqi_daily`: computed daily AQI products;
 - `cams_policy_forecast`: Policy city forecast JSON;
-- `open_ifs_data`: OpenIFS control forecast products;
+- `open_ifs_data`: operational IFS forecast products from ECMWF Open Data;
 - `bulletin_uq`: daily uncertainty/confidence products;
 - `nuts_shapefile`: administrative polygon geometry;
 - `land_sea_mask`: the mask used by confidence inference and training; and
@@ -103,8 +103,8 @@ these paths, make sure the replacement files are present.
   coordinate names, and model-training variable names.
 - `era5_euro` defines ERA5 fields, the Europe crop, and the CAMS-grid
   regridding methods.
-- `open_ifs.channel` and `open_ifs.client_source` select the normal OpenIFS
-  download route.
+- `open_ifs.channel` and `open_ifs.client_source` select how the operational
+  IFS forecast is downloaded. The `open_ifs` key is a local configuration name.
 - `error_modelling` defines the default pollutant, training/test years,
   temporal resolution, transforms, meteorological fields, and data backend.
 - `reporting.confidence` maps report pollutants to their checkpoint and

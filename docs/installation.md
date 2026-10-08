@@ -51,8 +51,8 @@ key: <PERSONAL-ACCESS-TOKEN>
 ```
 
 See [CAMS credentials](downloading.md#cams-credentials) for the account,
-licence, and token setup. OpenIFS and CAMS Policy do not require additional
-credentials with the default download configuration.
+licence, and token setup. The operational IFS forecast and CAMS Policy do not
+require additional credentials with the default download configuration.
 
 ## Training
 

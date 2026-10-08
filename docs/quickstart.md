@@ -16,8 +16,8 @@ Germany only.
    mask at their default paths, or override their locations as described in
    [Configuration](configuration.md).
 
-The OpenIFS client and CAMS Policy download also require network access, but
-not additional credentials in the default configuration.
+The operational IFS download and CAMS Policy download also require network
+access, but not additional credentials in the default configuration.
 
 ## Generate one report
 
@@ -29,7 +29,7 @@ airwise-daily --date 2026-09-29 --device cpu
 
 Both `YYYY-MM-DD` and `YYYYMMDD` date formats are accepted. The command:
 
-1. downloads the CAMS Europe forecast, OpenIFS 00Z control forecast, and CAMS
+1. downloads the CAMS Europe forecast, 00 UTC operational IFS forecast, and CAMS
    Policy city forecasts;
 2. computes the daily European AQI product;
 3. runs the bundled neural models to estimate AQI confidence; and
@@ -52,9 +52,9 @@ airwise-daily \
   --output reports/custom-name.json
 ```
 
-Existing downloads and AQI products are reused. Existing OpenIFS files are
-validated before reuse. Pass `--overwrite` to re-download all remote inputs,
-atomically replace the OpenIFS files, and recompute AQI.
+Existing downloads and AQI products are reused. Existing operational IFS files
+are validated before reuse. Pass `--overwrite` to re-download all remote inputs,
+atomically replace the operational IFS files, and recompute AQI.
 
 ## Run the steps separately
 
@@ -85,8 +85,8 @@ its errors visible.
 - `configs/regions/germany.yaml` selects and labels the NUTS regions and
   representative cities.
 - `data/shapefile/NUTS_RG_10M_2024_3035.gpkg` supplies their polygon geometry.
-- Production uncertainty inference uses the OpenIFS control forecast
-  (`number=0`), not a 51-member ensemble.
+- Production uncertainty inference uses the operational high-resolution IFS
+  forecast (`oper`/`fc`, 00 UTC), not a 51-member ensemble.
 
 ## Next steps
 
