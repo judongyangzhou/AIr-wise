@@ -53,8 +53,10 @@ Immutable application definitions are installed with the package:
 ## Daily production flow
 
 1. `acquire_daily_inputs` explicitly downloads CAMS, the operational IFS
-   forecast (`oper`/`fc`, 00 UTC), and CAMS Policy city forecasts. The bulletin
-   table requires the Policy files. Download sources are described in
+   forecast (`oper`/`fc`, 00 UTC), and CAMS Policy city forecasts. If the
+   report-date Policy product is not yet published, acquisition uses the
+   previous day's run. The transboundary table is omitted when neither run is
+   available. Download sources are described in
    [Downloading data](downloading.md).
 2. `compute_daily_forecast_aqi` reads local CAMS data and writes an AQI
    NetCDF.

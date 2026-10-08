@@ -54,7 +54,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     locations = [paths.cams_forecast]
     if paths.openifs_control:
         locations.append(paths.openifs_control[0].parent)
-    locations.append(paths.policy_forecasts[0].parent)
+    if paths.policy_forecasts:
+        locations.append(paths.policy_forecasts[0].parent)
+        if paths.policy_run_date is not None and paths.policy_run_date != args.date:
+            print(
+                f"Policy product for {args.date.isoformat()} was not published; "
+                f"using the {paths.policy_run_date.isoformat()} run (lead hours 24-47)."
+            )
+    else:
+        print("Policy forecasts unavailable; the transboundary table will be omitted.")
     print("===== Download finished. All data saved to: =====")
     for path in locations:
         print(path)

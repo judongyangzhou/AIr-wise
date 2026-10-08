@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import date
+from dataclasses import dataclass
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,7 @@ from airwise.data.io.policy import (
 logger = logging.getLogger(__name__)
 
 LEAD_HOURS = 24
+FALLBACK_LEAD_START = 24
 TOP_N = 3
 COUNTRY_CONTRIBUTION_URL = (
     "https://policy.atmosphere.copernicus.eu/daily/country-contribution/"
@@ -119,12 +121,41 @@ def sector_label(code: str, renaming: dict[str, str]) -> str:
     return source_display_name(code, renaming)
 
 
-def mean_lead_hours(values: list[float], hours: int = LEAD_HOURS) -> float:
+class PolicyForecastUnavailable(FileNotFoundError):
+    """Neither the report-date run nor the previous day's run can be summarised."""
+
+
+@dataclass(frozen=True)
+class PolicyForecastWindow:
+    """Hourly slice of one Policy run used for a report date."""
+
+    run_date: date
+    lead_start: int
+    hours: int
+
+    @property
+    def lead_end(self) -> int:
+        return self.lead_start + self.hours - 1
+
+    @property
+    def uses_previous_run(self) -> bool:
+        return self.lead_start != 0
+
+
+def mean_lead_hours(
+    values: list[float],
+    hours: int = LEAD_HOURS,
+    *,
+    start: int = 0,
+) -> float:
     if hours <= 0:
         raise ValueError("hours must be positive")
-    if len(values) < hours:
-        raise ValueError(f"Expected at least {hours} hourly values, got {len(values)}")
-    window = [float(item) for item in values[:hours]]
+    if start < 0:
+        raise ValueError("start must be non-negative")
+    end = start + hours
+    if len(values) < end:
+        raise ValueError(f"Expected at least {end} hourly values, got {len(values)}")
+    window = [float(item) for item in values[start:end]]
     return sum(window) / hours
 
 
@@ -142,6 +173,7 @@ def summarise_pollutant(
     *,
     renaming: dict[str, str] | None = None,
     hours: int = LEAD_HOURS,
+    start: int = 0,
     top_n: int = TOP_N,
 ) -> dict[str, Any]:
     renaming = renaming or {}
@@ -155,7 +187,7 @@ def summarise_pollutant(
         hout = record.get("hOut")
         if not isinstance(hout, list):
             raise ValueError(f"{poll}/{code} is missing hourly values")
-        totals[code] = totals.get(code, 0.0) + mean_lead_hours(hout, hours=hours)
+        totals[code] = totals.get(code, 0.0) + mean_lead_hours(hout, hours=hours, start=start)
 
     if not totals:
         raise ValueError(f"No {poll} source records found")
@@ -191,6 +223,7 @@ def summarise_city(
     *,
     renaming: dict[str, str] | None = None,
     hours: int = LEAD_HOURS,
+    start: int = 0,
     top_n: int = TOP_N,
 ) -> dict[str, dict[str, Any]]:
     records = _records_for_date(payload, report_date)
@@ -200,6 +233,7 @@ def summarise_city(
             poll,
             renaming=renaming,
             hours=hours,
+            start=start,
             top_n=top_n,
         )
         for pollutant_id, poll, _label in POLLUTANTS
@@ -214,6 +248,113 @@ def load_city_payload(path: str | Path) -> dict[str, Any]:
     return payload
 
 
+def _city_names(cities: list[dict[str, Any]]) -> list[str]:
+    names: list[str] = []
+    for city in cities:
+        name = str(city.get("name") or "").strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def _cities_for_year(dest: Path, year: int, country: str) -> list[dict[str, Any]]:
+    try:
+        catalogue = load_cached_cities(year, out_dir=dest)
+    except FileNotFoundError:
+        return []
+    return filter_cities(catalogue, country=country)
+
+
+def _all_city_files_present(
+    dest: Path,
+    run_date: date,
+    cities: list[dict[str, Any]],
+    inventory: str,
+) -> bool:
+    names = _city_names(cities)
+    if not names:
+        return False
+    return all(
+        city_json_path(dest, run_date, name, inventory=inventory).is_file() for name in names
+    )
+
+
+def _covers_lead_window(payload: dict[str, Any], run_date: date, start: int, hours: int) -> bool:
+    records = payload.get(f"{run_date:%Y%m%d}")
+    if not isinstance(records, list) or not records:
+        return False
+    end = start + hours
+    for record in records:
+        if not isinstance(record, dict):
+            return False
+        hout = record.get("hOut")
+        if not isinstance(hout, list) or len(hout) < end:
+            return False
+    return True
+
+
+def resolve_policy_window(
+    report_date: date,
+    *,
+    policy_dir: str | Path | None = None,
+    country: str = DEFAULT_COUNTRY,
+    inventory: str = DEFAULT_INVENTORY,
+    hours: int = LEAD_HOURS,
+) -> PolicyForecastWindow | None:
+    """Choose the report-date run, or the previous run's lead hours 24 onward.
+
+    The report-date directory is used only when every city file is present.
+    Otherwise the previous day's complete set is used when each series covers
+    lead hours ``FALLBACK_LEAD_START`` through ``FALLBACK_LEAD_START + hours``.
+    """
+    dest = Path(policy_dir or default_out_dir())
+    same_day_cities = _cities_for_year(dest, report_date.year, country)
+    if _all_city_files_present(dest, report_date, same_day_cities, inventory):
+        return PolicyForecastWindow(run_date=report_date, lead_start=0, hours=hours)
+
+    previous = report_date - timedelta(days=1)
+    if previous.year == report_date.year:
+        previous_cities = same_day_cities
+    else:
+        previous_cities = _cities_for_year(dest, previous.year, country) or same_day_cities
+    if not _all_city_files_present(dest, previous, previous_cities, inventory):
+        return None
+    for name in _city_names(previous_cities):
+        path = city_json_path(dest, previous, name, inventory=inventory)
+        if not _covers_lead_window(load_city_payload(path), previous, FALLBACK_LEAD_START, hours):
+            return None
+    return PolicyForecastWindow(
+        run_date=previous,
+        lead_start=FALLBACK_LEAD_START,
+        hours=hours,
+    )
+
+
+def _pdf_interpretation(
+    *,
+    report_date: date,
+    run_date: date,
+    lead_start: int,
+    lead_end: int,
+    uses_previous_run: bool,
+) -> str:
+    source = f"Source: CAMS Policy Tools country contribution ({COUNTRY_CONTRIBUTION_URL})."
+    if uses_previous_run:
+        return (
+            f"The CAMS Policy product for {report_date.isoformat()} was not yet available. "
+            f"This table uses the forecast issued on {run_date.isoformat()}. "
+            f"Each source value is the mean contribution over lead hours {lead_start}-{lead_end} "
+            f"of that run, which are the hours valid on {report_date.isoformat()}. "
+            "These shares can differ from the report-date run. "
+            f"{source}"
+        )
+    return (
+        "Main contributors are the three largest sources of the city-mean "
+        f"concentration over lead hours {lead_start}-{lead_end}. "
+        f"{source}"
+    )
+
+
 def build_tbi_report(
     report_date: date,
     *,
@@ -225,22 +366,30 @@ def build_tbi_report(
     redistribution: bool = False,
 ) -> dict[str, Any]:
     dest = Path(policy_dir or default_out_dir())
-    renaming = load_renaming_map(renaming_cache_path(dest), inventory=inventory)
-    cities = filter_cities(
-        load_cached_cities(report_date.year, out_dir=dest),
+    window = resolve_policy_window(
+        report_date,
+        policy_dir=dest,
         country=country,
+        inventory=inventory,
+        hours=hours,
     )
+    if window is None:
+        previous = report_date - timedelta(days=1)
+        raise PolicyForecastUnavailable(
+            "No complete CAMS Policy city forecasts for "
+            f"{report_date.isoformat()} or {previous.isoformat()} under {dest}"
+        )
+    renaming = load_renaming_map(renaming_cache_path(dest), inventory=inventory)
+    cities = _cities_for_year(dest, window.run_date.year, country)
     if not cities:
         raise ValueError(f"No cities found for country {country!r}")
 
     city_rows: list[dict[str, Any]] = []
-    missing: list[str] = []
     for city in cities:
         name = str(city.get("name") or "").strip()
-        path = city_json_path(dest, report_date, name, inventory=inventory)
-        if not path.is_file():
-            missing.append(name)
+        if not name:
             continue
+        path = city_json_path(dest, window.run_date, name, inventory=inventory)
         logger.info("Summarising %s from %s", name, path)
         city_rows.append(
             {
@@ -251,24 +400,35 @@ def build_tbi_report(
                 "lon": city.get("lon"),
                 "pollutants": summarise_city(
                     load_city_payload(path),
-                    report_date,
+                    window.run_date,
                     renaming=renaming,
-                    hours=hours,
+                    hours=window.hours,
+                    start=window.lead_start,
                     top_n=top_n,
                 ),
             }
         )
 
-    if missing:
-        raise FileNotFoundError(
-            "Missing source-receptor JSON for "
-            + ", ".join(missing)
-            + f" under {dest / f'{report_date:%Y%m%d}' / inventory}"
-        )
     if not city_rows:
         raise ValueError(f"No city forecasts found under {dest}")
 
     country_label = country.upper() if country.lower() == "germany" else country
+    if window.uses_previous_run:
+        interpretation = _pdf_interpretation(
+            report_date=report_date,
+            run_date=window.run_date,
+            lead_start=window.lead_start,
+            lead_end=window.lead_end,
+            uses_previous_run=True,
+        )
+    else:
+        interpretation = (
+            f"Each source value is the mean contribution over lead hours "
+            f"{window.lead_start}-{window.lead_end}. "
+            "Share is that mean divided by the sum of all source means. "
+            "top_share is the combined share of the three largest sources. "
+            f"Source: CAMS Policy Tools country contribution ({COUNTRY_CONTRIBUTION_URL})."
+        )
     return {
         "schema_version": "1.0",
         "report_type": "transboundary_contribution",
@@ -276,9 +436,11 @@ def build_tbi_report(
             "title": f"Country contributions to PM10/PM2.5 for {country_label}",
             "country": country_label,
             "report_date": report_date.isoformat(),
+            "forecast_run_date": window.run_date.isoformat(),
+            "uses_previous_run": window.uses_previous_run,
             "inventory": inventory,
             "redistribution": redistribution,
-            "lead_hours": [0, hours - 1],
+            "lead_hours": [window.lead_start, window.lead_end],
             "aggregation": "mean",
             "top_n": top_n,
             "source_url": COUNTRY_CONTRIBUTION_URL,
@@ -286,12 +448,7 @@ def build_tbi_report(
             "project_title": "AI-Based Uncertainty-Aware Air Quality Assessment",
         },
         "section_title": "What are the contributions from countries to PM10/2.5 concentrations?",
-        "interpretation": (
-            f"Each source value is the mean contribution over lead hours 0-{hours - 1}. "
-            "Share is that mean divided by the sum of all source means. "
-            "top_share is the combined share of the three largest sources. "
-            f"Source: CAMS Policy Tools country contribution ({COUNTRY_CONTRIBUTION_URL})."
-        ),
+        "interpretation": interpretation,
         "pollutant_order": [pollutant_id for pollutant_id, _poll, _label in POLLUTANTS],
         "cities": city_rows,
     }
@@ -329,12 +486,17 @@ def slim_transboundary_section(
             }
         )
     start_hour, end_hour = int(hours[0]), int(hours[-1])
+    report_day = date.fromisoformat(str(metadata.get("report_date")))
+    run_day_text = metadata.get("forecast_run_date") or metadata.get("report_date")
+    run_day = date.fromisoformat(str(run_day_text))
     return {
         "section_title": section_title,
-        "interpretation": (
-            "Main contributors are the three largest sources of the city-mean "
-            f"concentration over lead hours {start_hour}-{end_hour}. "
-            f"Source: CAMS Policy Tools country contribution ({COUNTRY_CONTRIBUTION_URL})."
+        "interpretation": _pdf_interpretation(
+            report_date=report_day,
+            run_date=run_day,
+            lead_start=start_hour,
+            lead_end=end_hour,
+            uses_previous_run=bool(metadata.get("uses_previous_run")),
         ),
         "lead_hours": [start_hour, end_hour],
         "top_n": int(metadata.get("top_n") or TOP_N),
@@ -379,12 +541,20 @@ def attach_transboundary_pollution(
     policy_dir: str | Path | None = None,
     hours: int = LEAD_HOURS,
 ) -> dict[str, Any]:
-    """Embed a slim transboundary table section into bulletin JSON."""
-    report_data["transboundary_pollution"] = build_bulletin_transboundary_section(
-        report_date,
-        policy_dir=policy_dir,
-        hours=hours,
-    )
+    """Embed a slim transboundary table section into bulletin JSON.
+
+    When neither the report-date run nor the previous day's run is complete,
+    the section is left out and later bulletin sections keep their numbers.
+    """
+    try:
+        report_data["transboundary_pollution"] = build_bulletin_transboundary_section(
+            report_date,
+            policy_dir=policy_dir,
+            hours=hours,
+        )
+    except PolicyForecastUnavailable as exc:
+        logger.warning("Omitting transboundary pollution table: %s", exc)
+        return report_data
     time_series = report_data.get("forecast_time_series")
     if isinstance(time_series, dict):
         title = str(time_series.get("section_title") or "")

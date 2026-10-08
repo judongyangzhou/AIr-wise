@@ -30,7 +30,11 @@ airwise-daily --date 2026-09-29 --device cpu
 Both `YYYY-MM-DD` and `YYYYMMDD` date formats are accepted. The command:
 
 1. downloads the CAMS Europe forecast, 00 UTC operational IFS forecast, and CAMS
-   Policy city forecasts;
+   Policy city forecasts. If the report-date Policy product is not yet
+   published (HTTP 404), the command uses the previous day's run and the
+   transboundary table averages lead hours 24–47, which are valid on the
+   report date. The PDF says which run was used. If that previous run is also
+   unavailable, the bulletin is still written without the transboundary table;
 2. computes the daily European AQI product;
 3. runs the bundled neural models to estimate AQI confidence; and
 4. writes the bulletin as JSON and PDF.

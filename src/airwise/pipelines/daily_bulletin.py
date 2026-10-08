@@ -520,5 +520,8 @@ def generate_report_json(
         land_sea_mask_path=land_mask,
     )
     attach_transboundary_pollution(report_data, report_date, policy_dir=policy_dir)
-    logger.info("Attached transboundary pollution table data")
+    if report_data.get("transboundary_pollution") is None:
+        logger.info("Transboundary pollution table omitted")
+    else:
+        logger.info("Attached transboundary pollution table data")
     return write_report_json(output_path, report_data)

@@ -42,6 +42,10 @@ USER_AGENT = "airwise/0.1 (ECMWF Code for Earth 2026)"
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
 
+class PolicyProductNotFoundError(RuntimeError):
+    """The requested CAMS Policy daily product is not published (HTTP 404)."""
+
+
 def parse_date(value: str) -> date:
     """Parse YYYYMMDD (preferred) or YYYY-MM-DD."""
     text = value.strip()
@@ -139,6 +143,8 @@ def fetch_json(
             return json.loads(raw.decode("utf-8"))
         except HTTPError as exc:
             last_error = exc
+            if exc.code == 404:
+                raise PolicyProductNotFoundError(f"HTTP 404 for {url}") from exc
             if exc.code not in RETRYABLE_STATUS or attempt == attempts:
                 raise RuntimeError(f"HTTP {exc.code} for {url}") from exc
         except (URLError, TimeoutError, json.JSONDecodeError) as exc:
@@ -305,11 +311,12 @@ def download_country_city_forecasts(
         inventory,
     )
     paths: list[Path] = []
-    failures: list[str] = []
+    not_found: list[str] = []
+    other_failures: list[str] = []
     for city in cities:
         name = str(city.get("name") or "").strip()
         if not name:
-            failures.append(f"city record missing name: {city!r}")
+            other_failures.append(f"city record missing name: {city!r}")
             continue
         try:
             paths.append(
@@ -324,10 +331,20 @@ def download_country_city_forecasts(
                     retries=retries,
                 )
             )
+        except PolicyProductNotFoundError as exc:
+            logger.error("Failed to download %s: %s", name, exc)
+            not_found.append(f"{name}: {exc}")
         except (OSError, RuntimeError, ValueError) as exc:
             logger.error("Failed to download %s: %s", name, exc)
-            failures.append(f"{name}: {exc}")
+            other_failures.append(f"{name}: {exc}")
 
+    if not_found and not other_failures and not paths:
+        detail = "; ".join(not_found)
+        raise PolicyProductNotFoundError(
+            f"Policy product for {report_date.isoformat()} is not published "
+            f"({len(not_found)}/{len(cities)} cities HTTP 404): {detail}"
+        )
+    failures = [*other_failures, *not_found]
     if failures:
         detail = "; ".join(failures)
         raise RuntimeError(

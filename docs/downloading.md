@@ -166,8 +166,20 @@ The files are written under `paths.cams_policy_forecast`. The standalone
 downloader can query other country names or two-letter codes exposed by the
 Policy API, but the published AIr-wise bulletin currently has a Germany-only
 region configuration. No API token is required. The default request uses the
-TNO inventory, and bulletin generation fails rather than silently omitting the
-transboundary table when these files are unavailable.
+TNO inventory. `airwise-download-policy-forecast` downloads only the requested
+date and fails if that product returns HTTP 404.
+
+The daily acquisition command is different. CAMS Policy publishes the day's
+city forecasts late in the morning. Each file contains one run date and 97
+hourly values (lead hours 0–96). The bulletin normally averages lead hours
+0–23 of the report-date run. If every city for the report date returns HTTP
+404, acquisition downloads the previous day's run instead and the table uses
+lead hours 24–47 of that run. Those hours are valid on the report date. The
+PDF states the forecast issue date and that the shares can differ from the
+report-date run. If the previous day is also unpublished, or its files do not
+cover that window, the daily bulletin is still written and the transboundary
+table is omitted. A partial city set, or any error other than HTTP 404, still
+stops acquisition.
 
 ## Reusing and replacing downloads
 
