@@ -330,6 +330,39 @@ def resolve_policy_window(
     )
 
 
+def previous_run_reminder(
+    report_date: date,
+    run_date: date,
+    lead_start: int,
+    lead_end: int,
+) -> str:
+    """Operator notice when the table was built from the previous Policy run."""
+    return (
+        f"The CAMS Policy product for {report_date.isoformat()} was not yet available. "
+        f"Transboundary pollution table uses the forecast issued on {run_date.isoformat()}. "
+        f"Each source value is the mean contribution over lead hours {lead_start}-{lead_end} "
+        f"of that run, which are the hours valid on {report_date.isoformat()}. "
+        "Wait until about 12:00 CEST, check whether that day's product is available at "
+        f"{COUNTRY_CONTRIBUTION_URL}, and then regenerate the report."
+    )
+
+
+def log_previous_run_reminder(report_date: date, lead_hours: list[int] | None) -> None:
+    """Warn after report generation when the table used the previous day's run."""
+    if not lead_hours or int(lead_hours[0]) != FALLBACK_LEAD_START:
+        return
+    run_date = report_date - timedelta(days=1)
+    logger.warning(
+        "%s",
+        previous_run_reminder(
+            report_date,
+            run_date,
+            int(lead_hours[0]),
+            int(lead_hours[-1]),
+        ),
+    )
+
+
 def _pdf_interpretation(
     *,
     report_date: date,

@@ -9,12 +9,14 @@ from pathlib import Path
 
 from airwise.cli._common import configure_logging, parse_date
 from airwise.config import find_repo_root
+from airwise.domain.bulletin import load_report
 from airwise.pipelines.daily_bulletin import generate_report_json
 from airwise.reporting.pdf_generator import generate_pdf_from_json
 from airwise.reporting.source_receptor import (
     DEFAULT_COUNTRY,
     DEFAULT_INVENTORY,
     generate_tbi_report,
+    log_previous_run_reminder,
 )
 from airwise.resources import resource
 
@@ -97,6 +99,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     print(f"Wrote JSON to {json_output}")
     print(f"Wrote PDF to {pdf_output}")
+    _remind_if_previous_policy_run(json_output)
     return 0
 
 
@@ -128,7 +131,15 @@ def pdf_main(argv: Sequence[str] | None = None) -> int:
     configure_logging(args.log_level)
     output = write_bulletin_pdf(args.input, args.output, args.config)
     print(f"Wrote PDF to {output}")
+    _remind_if_previous_policy_run(args.input)
     return 0
+
+
+def _remind_if_previous_policy_run(json_path: str | Path) -> None:
+    report = load_report(json_path)
+    section = report.transboundary_pollution
+    lead_hours = section.lead_hours if section is not None else None
+    log_previous_run_reminder(report.metadata.report_date, lead_hours)
 
 
 def build_transboundary_parser() -> argparse.ArgumentParser:
